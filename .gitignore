@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Application Builds & Binaries
+ArkenStone.app
+Palantir.app
+*.dmg
+Palantir yedek/
+Palantirv2 yedek/
+*yedek*/
+*.app
+*.dSYM
+main
+
+# Swift Package Manager & Xcode
+/.build
+/Packages
+xcuserdata/
+DerivedData/
+.swiftpm/
+
+# Temporary & Caches
+*.swp
+*~
+.netrc
+/tmp/swift-cache
