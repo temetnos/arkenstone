@@ -185,11 +185,14 @@ public class NetworkMonitor {
                 let name = String(cString: cur.pointee.ifa_name)
                 let family = addrPtr.pointee.sa_family
                 
-                // Exclude virtual / airdrop / bridge interfaces
+                // Exclude virtual / vpn / airdrop / bridge / docker interfaces
                 let isVirtual = name.hasPrefix("lo") || name.hasPrefix("utun") ||
                                 name.hasPrefix("awdl") || name.hasPrefix("llw") ||
                                 name.hasPrefix("bridge") || name.hasPrefix("gif") ||
-                                name.hasPrefix("stf")
+                                name.hasPrefix("stf") || name.hasPrefix("tailscale") ||
+                                name.hasPrefix("wg") || name.hasPrefix("tun") ||
+                                name.hasPrefix("tap") || name.hasPrefix("docker") ||
+                                name.hasPrefix("veth") || name.hasPrefix("p2p")
                 
                 if !isVirtual && family == UInt8(AF_INET) {
                     var addr = addrPtr.pointee
@@ -198,10 +201,13 @@ public class NetworkMonitor {
                         let ip = String(cString: hostname)
                         // Ignore self-assigned 169.254.x.x link-local and 127.x.x.x
                         if !ip.hasPrefix("169.254.") && !ip.hasPrefix("127.") {
-                            return (ip, name)
-                        } else if candidateIP == nil {
-                            candidateIP = ip
-                            candidateInterface = name
+                            // Prioritize real LAN IP addresses (192.168.x, 10.x, 172.16-31.x)
+                            if ip.hasPrefix("192.168.") || ip.hasPrefix("10.") || ip.hasPrefix("172.") {
+                                return (ip, name)
+                            } else if candidateIP == nil {
+                                candidateIP = ip
+                                candidateInterface = name
+                            }
                         }
                     }
                 }
@@ -212,7 +218,7 @@ public class NetworkMonitor {
         if let ip = candidateIP, let iface = candidateInterface {
             return (ip, iface)
         }
-        return (L10n.tr("Not Connected", "Bağlı Değil"), "en0")
+        return (L10n.tr("Not Connected", "Bağlı Değil"), "-")
     }
     
     private func formatSpeed(_ bytesPerSec: Double) -> String {

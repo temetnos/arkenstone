@@ -112,7 +112,9 @@ public class HardwareMonitor: ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             self?.updateAll()
         }
-        RunLoop.main.add(timer!, forMode: .common)
+        if let t = timer {
+            RunLoop.main.add(t, forMode: .common)
+        }
     }
     
     public func updateAll() {
@@ -155,30 +157,53 @@ public class HardwareMonitor: ObservableObject {
     private func fetchSystemInfo() {
         var modelSize = 0
         sysctlbyname("hw.model", nil, &modelSize, nil, 0)
-        var modelChars = [CChar](repeating: 0, count: modelSize)
-        sysctlbyname("hw.model", &modelChars, &modelSize, nil, 0)
+        var modelChars = [CChar](repeating: 0, count: max(modelSize, 1))
+        if modelSize > 0 {
+            sysctlbyname("hw.model", &modelChars, &modelSize, nil, 0)
+        }
         let rawModel = String(cString: modelChars)
         
         var brandSize = 0
         sysctlbyname("machdep.cpu.brand_string", nil, &brandSize, nil, 0)
-        var brandChars = [CChar](repeating: 0, count: brandSize)
-        sysctlbyname("machdep.cpu.brand_string", &brandChars, &brandSize, nil, 0)
+        var brandChars = [CChar](repeating: 0, count: max(brandSize, 1))
+        if brandSize > 0 {
+            sysctlbyname("machdep.cpu.brand_string", &brandChars, &brandSize, nil, 0)
+        }
         let rawBrand = String(cString: brandChars)
         
-        self.chipName = rawBrand.isEmpty ? "Apple Silicon" : rawBrand
+        // Chip identification with Apple Silicon fallbacks
+        if !rawBrand.isEmpty {
+            self.chipName = rawBrand
+        } else {
+            var targetSize = 0
+            sysctlbyname("hw.targettype", nil, &targetSize, nil, 0)
+            var targetChars = [CChar](repeating: 0, count: max(targetSize, 1))
+            if targetSize > 0 {
+                sysctlbyname("hw.targettype", &targetChars, &targetSize, nil, 0)
+            }
+            let targetType = String(cString: targetChars)
+            self.chipName = targetType.isEmpty ? "Apple Silicon" : "Apple Silicon (\(targetType))"
+        }
         
-        if rawModel.contains("MacBookAir") {
+        // Comprehensive Model Mapping (covering M1..M4 modern naming Mac14..Mac16, Intel & Legacy)
+        let m = rawModel.lowercased()
+        if m.contains("bookair") || m == "mac14,2" || m == "mac14,15" || m == "mac15,12" || m == "mac15,13" {
             self.macModel = "MacBook Air"
-        } else if rawModel.contains("MacBookPro") {
+        } else if m.contains("bookpro") || m.hasPrefix("mac14,5") || m.hasPrefix("mac14,6") || m.hasPrefix("mac14,7") || m.hasPrefix("mac14,9") || m.hasPrefix("mac14,10") || m.hasPrefix("mac15,3") || m.hasPrefix("mac15,6") || m.hasPrefix("mac15,7") || m.hasPrefix("mac15,8") || m.hasPrefix("mac15,9") || m.hasPrefix("mac15,10") || m.hasPrefix("mac15,11") || m.hasPrefix("mac16,5") || m.hasPrefix("mac16,6") || m.hasPrefix("mac16,7") || m.hasPrefix("mac16,8") {
             self.macModel = "MacBook Pro"
-        } else if rawModel.contains("Macmini") {
+        } else if m.contains("book") {
+            self.macModel = "MacBook"
+        } else if m.contains("mini") || m == "mac14,3" || m == "mac14,12" || m.hasPrefix("mac16,1") || m.hasPrefix("mac16,2") || m.hasPrefix("mac16,10") {
             self.macModel = "Mac mini"
-        } else if rawModel.contains("MacStudio") {
+        } else if m.contains("studio") || m == "mac14,13" || m == "mac14,14" {
             self.macModel = "Mac Studio"
-        } else if rawModel.contains("MacPro") {
+        } else if m.contains("imac") || m == "mac15,4" || m == "mac15,5" {
+            self.macModel = "iMac"
+        } else if m.contains("macpro") || m == "mac14,8" {
             self.macModel = "Mac Pro"
         } else {
-            self.macModel = "Apple Mac"
+            // Intelligent hardware fallback based on battery existence
+            self.macModel = batteryMonitor.snapshot.hasBattery ? "MacBook" : "Mac Desktop"
         }
         
         let os = ProcessInfo.processInfo.operatingSystemVersion

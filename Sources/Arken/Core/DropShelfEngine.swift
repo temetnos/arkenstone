@@ -125,16 +125,18 @@ public class DropShelfEngine: ObservableObject {
     
     public func addURLs(_ urls: [URL]) {
         guard !urls.isEmpty else { return }
+        let validURLs = urls.filter { FileManager.default.fileExists(atPath: $0.path) }
+        guard !validURLs.isEmpty else { return }
         saveStateForUndo()
         
-        for url in urls {
+        for url in validURLs {
             // Avoid adding exact duplicate paths in the same list
             if !items.contains(where: { $0.url == url }) {
                 items.insert(ShelvedItem(url: url), at: 0)
             }
         }
         
-        lastActionMessage = L10n.tr("\(urls.count) file(s) added to shelf", "\(urls.count) dosya rafa eklendi")
+        lastActionMessage = L10n.tr("\(validURLs.count) file(s) added to shelf", "\(validURLs.count) dosya rafa eklendi")
         SoundManager.shared.play(.pop)
     }
     
@@ -162,10 +164,20 @@ public class DropShelfEngine: ObservableObject {
     }
     
     public func revealInFinder(url: URL) {
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            lastActionMessage = L10n.tr("File no longer exists at location", "Dosya orijinal konumunda bulunamadı")
+            SoundManager.shared.play(.warning)
+            return
+        }
         NSWorkspace.shared.activateFileViewerSelecting([url])
     }
     
     public func openFile(url: URL) {
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            lastActionMessage = L10n.tr("File no longer exists at location", "Dosya orijinal konumunda bulunamadı")
+            SoundManager.shared.play(.warning)
+            return
+        }
         NSWorkspace.shared.open(url)
     }
     

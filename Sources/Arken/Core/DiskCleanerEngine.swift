@@ -357,6 +357,19 @@ public class DiskCleanerEngine: ObservableObject {
                 }
             }
             
+            // Protected System Whitelist: Guard against scanning core macOS system bundles
+            let appPath = appURL.path
+            let protectedNames = ["Finder.app", "Safari.app", "System Settings.app", "System Preferences.app", "App Store.app"]
+            if appPath.hasPrefix("/System/") || appPath.hasPrefix("/System/Applications") || protectedNames.contains(appURL.lastPathComponent) {
+                DispatchQueue.main.async {
+                    self.isScanningApp = false
+                    self.activeAppScan = nil
+                    self.lastStatusMessage = L10n.tr("System apps cannot be uninstalled (Protected by macOS)", "Sistem uygulamaları silinemez (macOS Koruması)")
+                    SoundManager.shared.play(.warning)
+                }
+                return
+            }
+            
             let appName = appURL.deletingPathExtension().lastPathComponent
             var bundleId = Bundle(url: appURL)?.bundleIdentifier
             

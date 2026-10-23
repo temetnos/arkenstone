@@ -20,7 +20,7 @@ public struct GlassCard<Content: View>: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                .stroke(Color(NSColor.separatorColor).opacity(0.35), lineWidth: 0.8)
         )
         .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 3)
     }
