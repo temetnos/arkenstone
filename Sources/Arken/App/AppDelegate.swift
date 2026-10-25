@@ -12,6 +12,9 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
         let monitor = HardwareMonitor()
         self.hardwareMonitor = monitor
         self.statusBarController = StatusBarController(monitor: monitor)
+        
+        // Register Global System Hotkeys (⌥O, ⌥C, ⌥M, ⌥D, ⌥A)
+        GlobalHotKeyEngine.shared.registerDefaults()
     }
     
     public func applicationWillTerminate(_ notification: Notification) {

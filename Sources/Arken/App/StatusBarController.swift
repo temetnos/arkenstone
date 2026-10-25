@@ -199,7 +199,20 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         monitor.isPopoverVisible = true
         monitor.updateAll()
         mainPopover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-        mainPopover.contentViewController?.view.window?.makeKey()
+        
+        // Activate app so popover gains immediate keyboard focus for shortcuts (⌘1..⌘9, ESC)
+        NSApp.activate(ignoringOtherApps: true)
+        if let window = mainPopover.contentViewController?.view.window {
+            window.makeKeyAndOrderFront(nil)
+        }
+    }
+    
+    public func toggleMainPopover() {
+        if mainPopover.isShown {
+            closeMainPopover()
+        } else {
+            showMainPopover()
+        }
     }
     
     public func closeMainPopover() {
@@ -269,6 +282,14 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
     
     public var isShelfDetached: Bool {
         return floatingShelfPanel != nil
+    }
+    
+    public func toggleDetachedShelf() {
+        if isShelfDetached {
+            closeDetachedShelf()
+        } else {
+            openDetachedShelf()
+        }
     }
     
     // MARK: - NSPopoverDelegate
@@ -435,7 +456,7 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         SoundManager.shared.play(.pop)
     }
     
-    @objc private func triggerOCRFromMenu() {
+    @objc public func triggerOCRFromMenu() {
         closeMainPopover()
         closeShelfPopover()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
@@ -443,7 +464,7 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         }
     }
     
-    @objc private func triggerColorPickerFromMenu() {
+    @objc public func triggerColorPickerFromMenu() {
         closeMainPopover()
         closeShelfPopover()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {

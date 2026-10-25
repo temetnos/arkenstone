@@ -275,21 +275,30 @@ public struct PopoverView: View {
                     StatusBarController.shared?.closeMainPopover()
                     return nil
                 }
-                // Command shortcuts
+                // Command shortcuts (⌘1..⌘9, ⌘,)
                 if event.modifierFlags.contains(.command) {
                     if let chars = event.charactersIgnoringModifiers {
+                        var targetTab: ArkenTab?
                         switch chars {
-                        case "1": selectedTab = .overview; return nil
-                        case "2": selectedTab = .cpu; return nil
-                        case "3": selectedTab = .gpu; return nil
-                        case "4": selectedTab = .ram; return nil
-                        case "5": selectedTab = .network; return nil
-                        case "6": selectedTab = .ports; return nil
-                        case "7": selectedTab = .thermal; return nil
-                        case "8": selectedTab = .battery; return nil
-                        case "9": selectedTab = .shelf; return nil
-                        case ",": selectedTab = .settings; return nil
+                        case "1": targetTab = .overview
+                        case "2": targetTab = .cpu
+                        case "3": targetTab = .gpu
+                        case "4": targetTab = .ram
+                        case "5": targetTab = .network
+                        case "6": targetTab = .ports
+                        case "7": targetTab = .thermal
+                        case "8": targetTab = .battery
+                        case "9": targetTab = .shelf
+                        case ",": targetTab = .settings
                         default: break
+                        }
+                        if let tab = targetTab {
+                            DispatchQueue.main.async {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    self.selectedTab = tab
+                                }
+                            }
+                            return nil
                         }
                     }
                 }
