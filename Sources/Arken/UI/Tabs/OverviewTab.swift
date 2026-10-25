@@ -321,7 +321,13 @@ public struct OverviewTab: View {
                         }
                     }
                     
-                    MiniSparkline(data: monitor.cpu.history, gradient: ArkenTheme.cpuGradient, height: 38)
+                    MiniSparkline(
+                        data: monitor.cpu.history,
+                        gradient: ArkenTheme.cpuGradient,
+                        secondaryData: monitor.gpu.history,
+                        secondaryGradient: ArkenTheme.gpuGradient,
+                        height: 38
+                    )
                 }
             }
             .contentShape(Rectangle())
