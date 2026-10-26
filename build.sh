@@ -29,6 +29,8 @@ swiftc -parse-as-library \
     -framework CoreAudio \
     -framework Vision \
     -framework UniformTypeIdentifiers \
+    -framework Carbon \
+    -framework SystemConfiguration \
     -O \
     ${SOURCES} \
     -o "${MACOS_DIR}/${APP_NAME}"
@@ -75,9 +77,9 @@ cat << 'EOF' > "${CONTENTS_DIR}/Info.plist"
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.8.4</string>
+    <string>0.8.5</string>
     <key>CFBundleVersion</key>
-    <string>84</string>
+    <string>85</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>
@@ -92,8 +94,9 @@ cat << 'EOF' > "${CONTENTS_DIR}/Info.plist"
 </plist>
 EOF
 
-# Entitlements
-cat << 'EOF' > "${CONTENTS_DIR}/${APP_NAME}.entitlements"
+# Entitlements (Stored in cache dir to keep bundle strictly clean for macOS codesign)
+ENTITLEMENTS_FILE="${CACHE_DIR}/${APP_NAME}.entitlements"
+cat << 'EOF' > "${ENTITLEMENTS_FILE}"
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -104,9 +107,12 @@ cat << 'EOF' > "${CONTENTS_DIR}/${APP_NAME}.entitlements"
 </plist>
 EOF
 
+# Clean any residual entitlements file inside bundle
+rm -f "${CONTENTS_DIR}/${APP_NAME}.entitlements"
+
 # Sign the bundle with stable designated requirement so macOS TCC retains Screen Recording permission
 codesign --force --deep --sign - \
-    --entitlements "${CONTENTS_DIR}/${APP_NAME}.entitlements" \
+    --entitlements "${ENTITLEMENTS_FILE}" \
     -r='designated => identifier "com.citadel.arkenstone"' \
     "${BUNDLE_DIR}"
 

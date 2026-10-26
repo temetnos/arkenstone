@@ -8,6 +8,7 @@ public struct OverviewTab: View {
     @ObservedObject var clipboard = ClipboardEngine.shared
     @ObservedObject var l10n = LocalizationManager.shared
     @ObservedObject var desktopFocus = DesktopFocusEngine.shared
+    @ObservedObject var volumeManager = VolumeManager.shared
     
     public var onSelectTab: ((ArkenTab) -> Void)? = nil
     
@@ -358,6 +359,67 @@ public struct OverviewTab: View {
             .contentShape(Rectangle())
             .onTapGesture { onSelectTab?(.network) }
             .help(L10n.tr("View network traffic and connection details", "Ağ trafiği ve bağlantı detaylarını gör"))
+            
+            // Mounted External Volumes & DMGs (Quick Ejector)
+            if !volumeManager.ejectableVolumes.isEmpty {
+                GlassCard(padding: 8) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Image(systemName: "externaldrive.fill.badge.checkmark")
+                                .font(.system(size: 11))
+                                .foregroundColor(ArkenTheme.accentColor)
+                            Text(L10n.tr("Mounted Drives & DMGs (\(volumeManager.ejectableVolumes.count))", "Bağlı Sürücüler ve DMG'ler (\(volumeManager.ejectableVolumes.count))"))
+                                .font(.system(size: 10, weight: .bold))
+                            
+                            Spacer()
+                            
+                            if volumeManager.ejectableVolumes.count > 1 {
+                                Button(action: {
+                                    volumeManager.ejectAll()
+                                }) {
+                                    HStack(spacing: 3) {
+                                        Image(systemName: "eject.fill")
+                                        Text(L10n.tr("Eject All", "Tümünü Çıkar"))
+                                    }
+                                    .font(.system(size: 8.5, weight: .semibold))
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 2)
+                                    .background(Color.white.opacity(0.1))
+                                    .clipShape(Capsule())
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        
+                        ForEach(volumeManager.ejectableVolumes) { vol in
+                            HStack(spacing: 6) {
+                                Image(systemName: vol.url.pathExtension.lowercased() == "dmg" || vol.name.contains(".dmg") ? "opticaldiscdrive.fill" : "externaldrive.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.secondary)
+                                Text(vol.name)
+                                    .font(.system(size: 9.5, weight: .medium))
+                                    .lineLimit(1)
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    volumeManager.eject(volume: vol)
+                                }) {
+                                    Image(systemName: "eject.circle.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(ArkenTheme.accentColor)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .help(L10n.tr("Safely Eject", "Güvenle Çıkar"))
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.white.opacity(0.04))
+                            .cornerRadius(5)
+                        }
+                    }
+                }
+            }
             
             // Quick Status Strip
             HStack(spacing: 8) {

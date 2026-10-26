@@ -11,9 +11,12 @@ public struct ListeningPortItem: Identifiable, Equatable {
     public let protocolType: String
     public var isKilled: Bool = false
     
+    private static let devPorts: Set<Int> = [
+        3000, 3001, 3002, 4000, 4200, 5000, 5001, 5173, 5174, 8000, 8080, 8888, 9000, 9090, 27017, 5432, 3306, 6379, 11434
+    ]
+    
     public var isCommonDevPort: Bool {
-        let devPorts = [3000, 3001, 5173, 8000, 8080, 5000, 5001, 4000, 4200, 8888, 9000, 27017, 5432, 3306, 6379]
-        return devPorts.contains(port)
+        Self.devPorts.contains(port)
     }
 }
 
@@ -51,7 +54,7 @@ public class PortManagerEngine: ObservableObject {
             
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/sbin/lsof")
-            process.arguments = ["-iTCP", "-sTCP:LISTEN", "-n", "-P"]
+            process.arguments = ["-F", "pcnPt", "-iTCP", "-sTCP:LISTEN", "-n", "-P"]
             
             let pipe = Pipe()
             process.standardOutput = pipe
@@ -118,33 +121,45 @@ public class PortManagerEngine: ObservableObject {
         var results: [ListeningPortItem] = []
         var seenKeys = Set<String>()
         
-        let lines = output.components(separatedBy: .newlines)
-        guard lines.count > 1 else { return [] }
+        var currentPid: Int32?
+        var currentCmd: String = ""
+        var currentProto: String = "TCP"
         
-        // Skip header line
-        for line in lines.dropFirst() {
-            let parts = line.split(whereSeparator: { $0.isWhitespace })
-            // Columns: COMMAND, PID, USER, FD, TYPE, DEVICE, SIZE/OFF, NODE, NAME
-            guard parts.count >= 9 else { continue }
+        let lines = output.components(separatedBy: .newlines)
+        for line in lines {
+            guard !line.isEmpty else { continue }
+            let prefix = line.first!
+            let val = String(line.dropFirst())
             
-            let cmd = String(parts[0])
-            guard let pid = Int32(parts[1]) else { continue }
-            let nameCol = String(parts[8]) // e.g. *:3000, 127.0.0.1:8080, [::]:5000
-            
-            if let colonIdx = nameCol.lastIndex(of: ":") {
-                let portStr = String(nameCol[nameCol.index(after: colonIdx)...])
-                if let portNum = Int(portStr) {
-                    let key = "\(portNum)_\(pid)"
-                    if !seenKeys.contains(key) {
-                        seenKeys.insert(key)
-                        results.append(ListeningPortItem(
-                            port: portNum,
-                            processName: cmd,
-                            pid: pid,
-                            protocolType: String(parts[4])
-                        ))
+            switch prefix {
+            case "p":
+                currentPid = Int32(val)
+                currentCmd = ""
+                currentProto = "TCP"
+            case "c":
+                currentCmd = val
+            case "t":
+                currentProto = val
+            case "P":
+                if !val.isEmpty { currentProto = val }
+            case "n":
+                if let pid = currentPid, let colonIdx = val.lastIndex(of: ":") {
+                    let portStr = String(val[val.index(after: colonIdx)...])
+                    if let portNum = Int(portStr) {
+                        let key = "\(portNum)_\(pid)"
+                        if !seenKeys.contains(key) {
+                            seenKeys.insert(key)
+                            results.append(ListeningPortItem(
+                                port: portNum,
+                                processName: currentCmd.isEmpty ? "Unknown" : currentCmd,
+                                pid: pid,
+                                protocolType: currentProto
+                            ))
+                        }
                     }
                 }
+            default:
+                break
             }
         }
         return results

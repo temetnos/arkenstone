@@ -194,6 +194,32 @@ public struct BatteryTab: View {
                                             .foregroundColor(.secondary)
                                     }
                                 }
+                                
+                                // Top-Up to 100% Quick Button
+                                Button(action: {
+                                    powerGuard.toggleTopUp()
+                                }) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: powerGuard.isTopUpActive ? "bolt.circle.fill" : "bolt.badge.automatic")
+                                            .foregroundColor(powerGuard.isTopUpActive ? .yellow : .primary)
+                                            .font(.system(size: 10, weight: .bold))
+                                        Text(powerGuard.isTopUpActive 
+                                             ? L10n.tr("⚡ Top-Up Active (Charging to 100%)", "⚡ Tam Şarj Aktif (%100'e Doluyor)")
+                                             : L10n.tr("⚡ Top-Up to 100% (One-Time Full Charge)", "⚡ %100 Tam Şarj (Tek Seferlik)"))
+                                            .font(.system(size: 9, weight: .bold))
+                                            .foregroundColor(powerGuard.isTopUpActive ? .yellow : .primary)
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 5)
+                                    .frame(maxWidth: .infinity)
+                                    .background(powerGuard.isTopUpActive ? Color.yellow.opacity(0.18) : Color.white.opacity(0.06))
+                                    .cornerRadius(6)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .stroke(powerGuard.isTopUpActive ? Color.yellow.opacity(0.5) : Color.white.opacity(0.12), lineWidth: 1)
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
                             } else {
                                 // Authorization Required Card
                                 VStack(alignment: .leading, spacing: 6) {

@@ -95,5 +95,10 @@ public class GlobalHotKeyEngine {
         register(keyCode: UInt32(kVK_ANSI_A), modifiers: opt) {
             StatusBarController.shared?.toggleMainPopover()
         }
+        
+        // ⌥K -> Keyboard & Screen Cleaning Lock
+        register(keyCode: UInt32(kVK_ANSI_K), modifiers: opt) {
+            KeyboardCleanEngine.shared.toggleLock()
+        }
     }
 }

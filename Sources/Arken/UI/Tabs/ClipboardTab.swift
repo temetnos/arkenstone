@@ -267,6 +267,24 @@ struct ClipboardRowView: View {
                 .buttonStyle(PlainButtonStyle())
                 .help(L10n.tr("Copy to Clipboard", "Panoya Kopyala"))
                 
+                // Text Transforms (JSON, Base64, URL, Trim)
+                if item.type != .image {
+                    Menu {
+                        ForEach(TextTransform.allCases) { transform in
+                            Button(transform.title) {
+                                clipboard.transformAndCopy(item: item, transform: transform)
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 10))
+                            .foregroundColor(ArkenTheme.accentColor.opacity(0.85))
+                    }
+                    .menuStyle(BorderlessButtonMenuStyle())
+                    .frame(width: 14)
+                    .help(L10n.tr("Transform & Copy (JSON, Base64, URL, Plain Text)", "Dönüştür ve Kopyala (JSON, Base64, URL, Düz Metin)"))
+                }
+                
                 // Delete button
                 if isHovered {
                     Button(action: {

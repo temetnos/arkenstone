@@ -9,8 +9,63 @@ public class AudioMuteEngine: ObservableObject {
     @Published public var isMuted: Bool = false
     @Published public var deviceName: String = "Mikrofon"
     
+    private var currentListeningDeviceID: AudioObjectID = 0
+    private var deviceChangeListenerRegistered = false
+    
     public init() {
         updateMuteState()
+        setupCoreAudioListeners()
+    }
+    
+    private func setupCoreAudioListeners() {
+        guard !deviceChangeListenerRegistered else { return }
+        
+        var defaultInputAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        
+        let status = AudioObjectAddPropertyListenerBlock(
+            AudioObjectID(kAudioObjectSystemObject),
+            &defaultInputAddress,
+            DispatchQueue.main
+        ) { [weak self] (_, _) in
+            self?.handleDefaultDeviceChanged()
+        }
+        
+        if status == noErr {
+            deviceChangeListenerRegistered = true
+        }
+        
+        attachMuteListenerToCurrentDevice()
+    }
+    
+    private func handleDefaultDeviceChanged() {
+        updateMuteState()
+        attachMuteListenerToCurrentDevice()
+    }
+    
+    private func attachMuteListenerToCurrentDevice() {
+        guard let deviceID = getDefaultInputDevice() else { return }
+        
+        if currentListeningDeviceID != deviceID {
+            currentListeningDeviceID = deviceID
+            
+            var muteAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyMute,
+                mScope: kAudioDevicePropertyScopeInput,
+                mElement: kAudioObjectPropertyElementMain
+            )
+            
+            _ = AudioObjectAddPropertyListenerBlock(
+                deviceID,
+                &muteAddress,
+                DispatchQueue.main
+            ) { [weak self] (_, _) in
+                self?.updateMuteState()
+            }
+        }
     }
     
     public func toggleMute() {
@@ -78,7 +133,10 @@ public class AudioMuteEngine: ObservableObject {
         var nameSize = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
         if AudioObjectGetPropertyData(deviceID, &nameAddress, 0, nil, &nameSize, &name) == noErr,
            let cfName = name?.takeRetainedValue() {
-            self.deviceName = cfName as String
+            let n = cfName as String
+            DispatchQueue.main.async {
+                self.deviceName = n
+            }
         }
     }
     

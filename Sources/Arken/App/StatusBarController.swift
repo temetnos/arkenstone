@@ -49,6 +49,7 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
     private var mainPopover: NSPopover
     private var shelfPopover: NSPopover
     public var floatingShelfPanel: NSPanel?
+    public var floatingNotesPanel: NSPanel?
     private var monitor: HardwareMonitor
     private var dragView: StatusDragView?
     
@@ -106,9 +107,9 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
     }
     
     private func observeMonitor() {
-        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            self?.updateButtonContent()
-        }
+        // Redundant 2s timer removed: HardwareMonitor directly triggers updateButtonContent()
+        // on its background telemetry cycle, eliminating double-polling wakeups.
+        updateButtonContent()
     }
     
     public func updateButtonContent() {
@@ -257,6 +258,7 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false
         panel.titlebarAppearsTransparent = true
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         
         if let screen = NSScreen.main {
             let x = screen.visibleFrame.maxX - 410
@@ -292,6 +294,63 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         }
     }
     
+    public func openDetachedNotes() {
+        closeMainPopover()
+        
+        if let existing = floatingNotesPanel {
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        
+        let panel = NSPanel(
+            contentRect: NSRect(x: 150, y: 150, width: 440, height: 340),
+            styleMask: [.titled, .closable, .resizable, .utilityWindow, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isFloatingPanel = true
+        panel.level = .floating
+        panel.title = L10n.tr("Arken Notes", "Hızlı Notlar")
+        panel.isReleasedWhenClosed = false
+        panel.hidesOnDeactivate = false
+        panel.titlebarAppearsTransparent = true
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        
+        if let screen = NSScreen.main {
+            let x = screen.visibleFrame.maxX - 460
+            let y = screen.visibleFrame.maxY - 380
+            panel.setFrameOrigin(NSPoint(x: x, y: y))
+        }
+        
+        panel.contentViewController = NSHostingController(
+            rootView: DedicatedNotesView(onClose: { [weak self] in
+                self?.closeDetachedNotes()
+            })
+        )
+        
+        self.floatingNotesPanel = panel
+        panel.makeKeyAndOrderFront(nil)
+        SoundManager.shared.play(.action)
+    }
+    
+    public func closeDetachedNotes() {
+        floatingNotesPanel?.close()
+        floatingNotesPanel = nil
+    }
+    
+    public var isNotesDetached: Bool {
+        return floatingNotesPanel != nil
+    }
+    
+    public func toggleDetachedNotes() {
+        if isNotesDetached {
+            closeDetachedNotes()
+        } else {
+            openDetachedNotes()
+        }
+    }
+    
     // MARK: - NSPopoverDelegate
     public func popoverDidClose(_ notification: Notification) {
         guard let popover = notification.object as? NSPopover else { return }
@@ -314,6 +373,11 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         let shelfItem = NSMenuItem(title: shelfTitle, action: #selector(toggleShelfFromMenu), keyEquivalent: "d")
         shelfItem.target = self
         menu.addItem(shelfItem)
+        
+        let notesTitle = isNotesDetached ? L10n.tr("📝 Close Floating Notes", "📝 Yüzen Notları Kapat") : L10n.tr("📝 Open Floating Notes Window", "📝 Yüzen Notlar Penceresini Aç")
+        let notesItem = NSMenuItem(title: notesTitle, action: #selector(toggleNotesFromMenu), keyEquivalent: "n")
+        notesItem.target = self
+        menu.addItem(notesItem)
         
         let dragModeTitle = DropShelfEngine.shared.dragMode == .copy ? L10n.tr("📦 Shelf Action: 📋 Copy", "📦 Raf Eylemi: 📋 Kopyala") : L10n.tr("📦 Shelf Action: ✂️ Move", "📦 Raf Eylemi: ✂️ Taşı")
         let dragModeItem = NSMenuItem(title: dragModeTitle, action: #selector(toggleShelfDragMode), keyEquivalent: "")
@@ -385,6 +449,11 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         colorItem.target = self
         menu.addItem(colorItem)
         
+        let cleanItem = NSMenuItem(title: L10n.tr("✨ Keyboard & Screen Clean Lock", "✨ Klavye ve Ekran Temizlik Kilidi"), action: #selector(toggleCleanLock), keyEquivalent: "k")
+        cleanItem.keyEquivalentModifierMask = [.option]
+        cleanItem.target = self
+        menu.addItem(cleanItem)
+        
         let isMuted = AudioMuteEngine.shared.isMuted
         let micTitle = isMuted ? L10n.tr("🎙️ Unmute Microphone", "🎙️ Mikrofonun Sesini Aç") : L10n.tr("🔇 Mute Microphone (Global Mute)", "🔇 Mikrofonu Sustur (Global Mute)")
         let micItem = NSMenuItem(title: micTitle, action: #selector(toggleMicFromMenu), keyEquivalent: "m")
@@ -432,6 +501,10 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         }
     }
     
+    @objc private func toggleNotesFromMenu() {
+        toggleDetachedNotes()
+    }
+    
     @objc private func toggleShelfDragMode() {
         DropShelfEngine.shared.toggleDragMode()
     }
@@ -469,6 +542,14 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         closeShelfPopover()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             ColorPickerEngine.shared.pickColor()
+        }
+    }
+    
+    @objc public func toggleCleanLock() {
+        closeMainPopover()
+        closeShelfPopover()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            KeyboardCleanEngine.shared.toggleLock()
         }
     }
     

@@ -38,6 +38,7 @@ public struct ThermalSnapshot {
     public var batteryTemperature: Double = 0.0
     public var ssdTemperature: Double = 0.0
     public var maxSensorTemperature: Double = 0.0
+    public var fanData: FanData = FanData()
     public var thermalState: ProcessInfo.ThermalState = .nominal
     public var thermalStateString: String {
         switch thermalState {
@@ -130,13 +131,15 @@ public class ThermalMonitor {
         snapshot.maxSensorTemperature = maxTemp
         snapshot.detailedSensors = allSensors.sorted(by: { $0.temperature > $1.temperature })
         
-        // System thermal state
+        // System thermal state & SMC Fan status
         snapshot.thermalState = ProcessInfo.processInfo.thermalState
+        snapshot.fanData = SMCFanReader.shared.readFans()
     }
     
     private func fallbackThermalState() {
         let state = ProcessInfo.processInfo.thermalState
         snapshot.thermalState = state
+        snapshot.fanData = SMCFanReader.shared.readFans()
         switch state {
         case .nominal:
             snapshot.cpuTemperature = 42.0

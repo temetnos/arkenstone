@@ -360,4 +360,81 @@ public class ClipboardEngine: ObservableObject {
             return matchesFilter && matchesSearch
         }
     }
+    
+    public func transformAndCopy(item: ClipboardItem, transform: TextTransform) {
+        let text = item.content
+        let transformed: String
+        switch transform {
+        case .stripFormatting:
+            transformed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        case .formatJSON:
+            if let data = text.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data, options: []),
+               let prettyData = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]),
+               let prettyString = String(data: prettyData, encoding: .utf8) {
+                transformed = prettyString
+            } else {
+                transformed = text
+            }
+        case .minifyJSON:
+            if let data = text.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data, options: []),
+               let minData = try? JSONSerialization.data(withJSONObject: json, options: []),
+               let minString = String(data: minData, encoding: .utf8) {
+                transformed = minString
+            } else {
+                transformed = text
+            }
+        case .base64Encode:
+            transformed = Data(text.utf8).base64EncodedString()
+        case .base64Decode:
+            if let data = Data(base64Encoded: text.trimmingCharacters(in: .whitespacesAndNewlines)),
+               let decoded = String(data: data, encoding: .utf8) {
+                transformed = decoded
+            } else {
+                transformed = text
+            }
+        case .urlEncode:
+            transformed = text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? text
+        case .urlDecode:
+            transformed = text.removingPercentEncoding ?? text
+        case .uppercase:
+            transformed = text.uppercased()
+        case .lowercase:
+            transformed = text.lowercased()
+        }
+        
+        let pboard = NSPasteboard.general
+        pboard.clearContents()
+        pboard.setString(transformed, forType: .string)
+        SoundManager.shared.play(.pop)
+    }
+}
+
+public enum TextTransform: String, CaseIterable, Identifiable {
+    case stripFormatting = "Plain Text"
+    case formatJSON = "JSON Pretty"
+    case minifyJSON = "JSON Minify"
+    case base64Encode = "Base64 Encode"
+    case base64Decode = "Base64 Decode"
+    case urlEncode = "URL Encode"
+    case urlDecode = "URL Decode"
+    case uppercase = "UPPERCASE"
+    case lowercase = "lowercase"
+    
+    public var id: String { rawValue }
+    
+    public var title: String {
+        switch self {
+        case .stripFormatting: return L10n.tr("Plain Text (Trim)", "Düz Metin (Kırp)")
+        case .formatJSON: return L10n.tr("Format JSON (Pretty)", "JSON Hizala (Pretty)")
+        case .minifyJSON: return L10n.tr("Minify JSON", "JSON Sıkıştır (Minify)")
+        case .base64Encode: return "Base64 Encode"
+        case .base64Decode: return "Base64 Decode"
+        case .urlEncode: return "URL Encode"
+        case .urlDecode: return "URL Decode"
+        case .uppercase: return L10n.tr("UPPERCASE", "BÜYÜK HARF")
+        case .lowercase: return L10n.tr("lowercase", "küçük harf")
+        }
+    }
 }

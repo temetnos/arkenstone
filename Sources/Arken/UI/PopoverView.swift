@@ -159,52 +159,60 @@ public struct PopoverView: View {
             .padding(.top, 14)
             .padding(.bottom, 10)
             
-            // Tab Selector Pill Bar (Smooth Horizontal Scrolling)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 5) {
-                    ForEach(ArkenTab.allCases) { tab in
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.18)) {
-                                selectedTab = tab
-                            }
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: tab.icon)
-                                    .font(.system(size: 10, weight: .semibold))
-                                Text(tab.title)
-                                    .font(.system(size: 10, weight: .medium))
-                                
-                                if tab == .shelf && !shelf.items.isEmpty {
-                                    Text("\(shelf.items.count)")
-                                        .font(.system(size: 8, weight: .bold))
-                                        .padding(.horizontal, 4)
-                                        .padding(.vertical, 1)
-                                        .background(ArkenTheme.accentColor)
-                                        .foregroundColor(.white)
-                                        .clipShape(Capsule())
-                                } else if tab == .clipboard && !clipboard.items.isEmpty {
-                                    Text("\(clipboard.items.count)")
-                                        .font(.system(size: 8, weight: .bold))
-                                        .padding(.horizontal, 4)
-                                        .padding(.vertical, 1)
-                                        .background(Color.white.opacity(0.2))
-                                        .clipShape(Capsule())
+            // Tab Selector Pill Bar (Smooth Horizontal Scrolling with Auto-Scroll)
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 5) {
+                        ForEach(ArkenTab.allCases) { tab in
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.18)) {
+                                    selectedTab = tab
                                 }
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: tab.icon)
+                                        .font(.system(size: 10, weight: .semibold))
+                                    Text(tab.title)
+                                        .font(.system(size: 10, weight: .medium))
+                                    
+                                    if tab == .shelf && !shelf.items.isEmpty {
+                                        Text("\(shelf.items.count)")
+                                            .font(.system(size: 8, weight: .bold))
+                                            .padding(.horizontal, 4)
+                                            .padding(.vertical, 1)
+                                            .background(ArkenTheme.accentColor)
+                                            .foregroundColor(.white)
+                                            .clipShape(Capsule())
+                                    } else if tab == .clipboard && !clipboard.items.isEmpty {
+                                        Text("\(clipboard.items.count)")
+                                            .font(.system(size: 8, weight: .bold))
+                                            .padding(.horizontal, 4)
+                                            .padding(.vertical, 1)
+                                            .background(Color.white.opacity(0.2))
+                                            .clipShape(Capsule())
+                                    }
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 5)
+                                .background(
+                                    selectedTab == tab
+                                    ? Color.white.opacity(0.16)
+                                    : Color.clear
+                                )
+                                .foregroundColor(selectedTab == tab ? .white : .secondary)
+                                .clipShape(Capsule())
                             }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 5)
-                            .background(
-                                selectedTab == tab
-                                ? Color.white.opacity(0.16)
-                                : Color.clear
-                            )
-                            .foregroundColor(selectedTab == tab ? .white : .secondary)
-                            .clipShape(Capsule())
+                            .buttonStyle(PlainButtonStyle())
+                            .id(tab)
                         }
-                        .buttonStyle(PlainButtonStyle())
+                    }
+                    .padding(.horizontal, 14)
+                }
+                .onChange(of: selectedTab) { _, newTab in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        proxy.scrollTo(newTab, anchor: .center)
                     }
                 }
-                .padding(.horizontal, 14)
             }
             .padding(.bottom, 10)
             
@@ -262,6 +270,9 @@ public struct PopoverView: View {
                 Button("") { selectedTab = .thermal }.keyboardShortcut("7", modifiers: .command)
                 Button("") { selectedTab = .battery }.keyboardShortcut("8", modifiers: .command)
                 Button("") { selectedTab = .shelf }.keyboardShortcut("9", modifiers: .command)
+                Button("") { selectedTab = .clipboard }.keyboardShortcut("0", modifiers: .command)
+                Button("") { selectedTab = .scratchpad }.keyboardShortcut("n", modifiers: .command)
+                Button("") { selectedTab = .cleaner }.keyboardShortcut("k", modifiers: .command)
                 Button("") { selectedTab = .settings }.keyboardShortcut(",", modifiers: .command)
                 Button("") { StatusBarController.shared?.closeMainPopover() }.keyboardShortcut(.cancelAction)
             }
@@ -275,7 +286,7 @@ public struct PopoverView: View {
                     StatusBarController.shared?.closeMainPopover()
                     return nil
                 }
-                // Command shortcuts (⌘1..⌘9, ⌘,)
+                // Command shortcuts (⌘1..⌘9, ⌘0, ⌘N, ⌘K, ⌘,)
                 if event.modifierFlags.contains(.command) {
                     if let chars = event.charactersIgnoringModifiers {
                         var targetTab: ArkenTab?
@@ -289,6 +300,9 @@ public struct PopoverView: View {
                         case "7": targetTab = .thermal
                         case "8": targetTab = .battery
                         case "9": targetTab = .shelf
+                        case "0": targetTab = .clipboard
+                        case "n", "N": targetTab = .scratchpad
+                        case "k", "K": targetTab = .cleaner
                         case ",": targetTab = .settings
                         default: break
                         }

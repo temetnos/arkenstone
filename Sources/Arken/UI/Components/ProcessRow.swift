@@ -20,8 +20,8 @@ public struct ProcessRow: View {
                 .lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
             
-            // Metric Value
-            Text(isMemory ? item.memoryFormatted : String(format: "%.1fs", item.cpuUserSeconds))
+            // Metric Value (Memory or Real-Time CPU %)
+            Text(isMemory ? item.memoryFormatted : item.cpuFormatted)
                 .font(.system(size: 10, weight: .semibold, design: .monospaced))
                 .foregroundColor(isMemory ? ArkenTheme.ramColor : ArkenTheme.cpuColor)
             

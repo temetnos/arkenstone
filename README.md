@@ -69,15 +69,19 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 
 ### 1. 🛡️ Hardware Power Guard & Clamshell Awake
 * **What it does:** Communicates directly with the Apple Silicon SMC (System Management Controller) via a lightweight C helper (`arken-power-helper`) to stop battery charging at your target limit (e.g. 80%) while running your Mac directly on AC power.
+* **⚡ Top-Up to 100% Mode (v0.8.5):** Single-click temporary bypass to fill the battery to 100% before travel or meetings. Automatically re-engages normal 80% protection the moment the battery reaches 100% or the power brick is disconnected.
 * **Clamshell Mode:** Keeps your MacBook awake with the lid closed even without an external monitor or mouse connected.
 * **Safety Failsafe:** If the charger is unplugged, Clamshell Mode **deactivates immediately** to prevent battery drain and stop your laptop from accidentally overheating inside a backpack.
 * **Desktop Mac Support:** Automatically detects iMac, Mac mini, Mac Studio, and Mac Pro, displaying an **AC Direct Power** indicator instead of missing-battery warnings.
-* 💡 **Real-World Scenario:** You work at a desk connected to a power brick all day. Instead of letting your battery stay at 100% stress voltage, ArkenStone cuts charging at 80% and powers the Mac directly from the wall. Need to render a 4K video or download a large game overnight? Close the lid, put your Mac on your desk, and let it finish without sleeping.
+* 💡 **Real-World Scenario:** You work at a desk connected to a power brick all day. Instead of letting your battery stay at 100% stress voltage, ArkenStone cuts charging at 80% and powers the Mac directly from the wall. Need to travel tomorrow? Click Top-Up to 100% and let ArkenStone safely charge to full once.
 
 ---
 
 ### 2. 📊 Low-Overhead Hardware & Thermal Telemetry
 * **What it does:** Real-time monitoring of CPU per-core load (Performance vs. Efficiency cores), Apple Silicon GPU renderer load, memory pressure, active network speeds, and 50+ hardware thermal sensors (°C / °F).
+* **🌡️ SMC Fan Telemetry & Fanless Architecture (v0.8.5):** Real-time fan speed RPM telemetry via Mach SMC queries on MacBook Pro, Mac Studio, and Mac mini, with automatic "Fanless Architecture (Silent Passive Cooling)" detection for MacBook Air.
+* **⏱️ Real-Time Delta Process CPU Usage (v0.8.5):** True instantaneous per-process CPU utilization calculated via high-precision Mach time deltas, ensuring active processes are accurately surfaced.
+* **🌐 Dynamic Network Interface Detection (v0.8.5):** Automatically distinguishes between native Wi-Fi (`en0`), wired Ethernet adapters, bridges, and Personal Hotspots with real-time online/offline connectivity badges.
 * **Pure Kernel Calls:** Queries Mach kernel APIs (`host_processor_info`) and IOKit accelerators. Zero spawned shell subprocesses.
 * **Adaptive Polling:** Automatically throttles to a 3-second relaxed interval when the popover is closed to draw negligible energy.
 * 💡 **Real-World Scenario:** Your Mac feels warm while gaming or compiling code. Open ArkenStone (`⌘1`) to see exact chip die temperatures and identify which rogue background process is spiking CPU or eating memory.
@@ -87,6 +91,7 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 ### 3. 🏝️ Detachable Drop Shelf & Floating Workspace
 * **What it does:** A transient staging shelf for files, images, links, and snippets.
 * **Detachable Floating Panel (`[↗]`):** Pop out the shelf into an independent, always-on-top floating window that stays visible across full-screen apps and multiple monitors.
+* **Pinned Across All Spaces & Desktops (v0.8.5):** The floating shelf panel now stays pinned and travels with you across all macOS Spaces, Desktops, and Full-Screen applications (`.canJoinAllSpaces`).
 * **Safety & Undo:** Supports `⌘Z` multi-level undo if you accidentally remove an item, and automatically guards against crashes if a staged file is deleted from Finder.
 * **App Cleaner Bridge:** Dropping a `.app` bundle onto the shelf automatically gives you a one-click shortcut to inspect and remove all its leftover files.
 * 💡 **Real-World Scenario:** You are writing an article or email and collecting 6 different screenshots and PDF documents from different Finder folders. Instead of cluttering your Desktop, drag them all onto the ArkenStone menu bar icon or the floating shelf, then drag them into your email all at once.
@@ -95,6 +100,7 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 
 ### 4. 📋 Private RAM-Only Clipboard History
 * **What it does:** Tracks your copied snippets, text, code, links, and colors in volatile system memory.
+* **✨ Quick Text Transformers (v0.8.5):** Format/Prettify JSON, Minify JSON, Base64 Encode/Decode, URL Encode/Decode, and Plain-Text trim directly from clipboard history.
 * **Zero Disk Persistence:** History is stored strictly in RAM and clears automatically on reboot or quit.
 * **Password Vault Filter:** Automatically ignores sensitive pasteboards from 1Password, Bitwarden, KeePassXC, and Apple Keychain.
 * **RAM Guard:** Long text payloads over 100,000 characters are safely capped, and screenshots are downsampled into micro-thumbnails with a strict 30 MB ceiling.
@@ -102,10 +108,11 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 
 ---
 
-### 5. 🔍 Apple Vision On-Device Screen OCR (Text Grabber)
+### 5. 🔍 Apple Vision On-Device Screen OCR & QR Scanner
 * **What it does:** Interactive crosshair tool (`⌥O` or menu button) that extracts text from any area of your screen.
-* **100% On-Device & Private:** Powered locally by Apple's Vision Neural Engine (`VNRecognizeTextRequest`). No cloud calls, no internet connection required.
-* 💡 **Real-World Scenario:** You are watching a video tutorial or attending a Zoom meeting where code or an error message is shown on screen. You cannot select or copy it. Press `⌥O`, draw a box over the text, and it is instantly copied to your clipboard.
+* **Instant QR & Barcode Decoder (v0.8.5):** Simultaneously detects and parses QR codes and barcodes within the captured screen area, copying the decoded URL/payload instantly.
+* **100% On-Device & Private:** Powered locally by Apple's Vision Neural Engine (`VNRecognizeTextRequest` & `VNDetectBarcodesRequest`). No cloud calls, no internet connection required.
+* 💡 **Real-World Scenario:** You are watching a video tutorial or attending a Zoom meeting where a QR code or error message is shown on screen. Press `⌥O`, draw a box over it, and the decoded link or text is instantly copied to your clipboard.
 
 ---
 
@@ -148,6 +155,20 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 ### 11. 🎨 Magnifier Screen Eyedropper & Quick Scratchpad
 * **Pixel Loupe:** Magnifies screen pixels with an overlaid grid to inspect colors and copy `#HEX` or `rgb()` values (`⌥C`).
 * **Quick Scratchpad:** A clean notepad right in your menu bar to draft thoughts or stash temporary API tokens with one-click export to Desktop (`~/Desktop/Arken_Notes.txt`).
+* **Native Scratchpad Clipboard Integration (v0.8.5):** Full system keyboard shortcut support (`⌘C`, `⌘V`, `⌘X`, `⌘A`, `⌘Z`, `⇧⌘Z`) and native context menus for seamless copy-pasting.
+
+---
+
+### 12. ⌨️ Screen & Keyboard CleanLock `⌥K` (v0.8.5)
+* **What it does:** Full-screen protective shield that temporarily swallows all keystrokes and trackpad clicks while you wipe your screen, keyboard, and trackpad clean.
+* **Safety Hold-to-Unlock:** Press and hold the ESC key or the on-screen unlock button for 2.5 seconds to dismiss the shield.
+* 💡 **Real-World Scenario:** Dust and fingerprints on your MacBook screen or keyboard? Press `⌥K`, wipe your laptop clean without accidentally sending half-written messages or deleting files, then hold ESC to resume work.
+
+---
+
+### 13. ⏏️ Mounted External Drives & DMG Ejector (v0.8.5)
+* **What it does:** Live widget on the Overview dashboard showing all connected USB drives, external SSDs, and disk images (.dmg) with 1-click individual and "Eject All" options.
+* 💡 **Real-World Scenario:** You just finished installing an app from a downloaded DMG. Instead of opening Finder or finding the drive icon on your desktop, eject it directly from ArkenStone Overview with one click.
 
 ---
 
@@ -155,17 +176,18 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 
 | Tool / Workflow | Standalone Apps Price | ArkenStone Curated Solution |
 | :--- | :--- | :--- |
-| **Hardware Battery Limiter (SMC)** | ~$15 – $25 (or annual sub) | **Included (Power Guard & Bypass)** |
-| **System & Thermal Telemetry** | ~$10 – $15 | **Included (Mach & IOKit Engine)** |
-| **Drag & Drop File Staging Shelf** | ~$8 – $10 | **Included (Detachable Floating Shelf)** |
-| **Privacy Clipboard History** | ~$10 – $20 / yr | **Included (RAM-Only Clipboard)** |
-| **Screen OCR Text Extractor** | ~$10 – $15 | **Included (On-Device Vision OCR)** |
+| **Hardware Battery Limiter (SMC)** | ~$15 – $25 (or annual sub) | **Included (Power Guard & Bypass, Top-Up)** |
+| **System & Thermal Telemetry** | ~$10 – $15 | **Included (Mach & IOKit Engine, SMC Fan)** |
+| **Drag & Drop File Staging Shelf** | ~$8 – $10 | **Included (Detachable All-Spaces Shelf)** |
+| **Privacy Clipboard History** | ~$10 – $20 / yr | **Included (RAM-Only + Quick Transformers)** |
+| **Screen OCR Text Extractor** | ~$10 – $15 | **Included (On-Device Vision OCR & QR)** |
+| **Screen & Keyboard CleanLock** | ~$5 – $10 | **Included (CleanLock ⌥K Shield)** |
 | **App Leftover & Cache Cleaner** | ~$30 – $40 / yr | **Included (Safe Deep Cleaner)** |
 | **Lid-Closed Sleep Prevention** | ~$5 – $10 | **Included (Failsafe Clamshell Mode)** |
 | **Developer TCP Port Manager** | ~$10 | **Included (Active Port Killer)** |
 | **Quick DNS Switcher & Flusher** | ~$5 – $10 | **Included (Dynamic Network Resolver)** |
 | **Global Mic Mute & Focus Mode** | ~$5 – $10 | **Included (1-Click CoreAudio/Finder)** |
-| **TOTAL MARKET VALUE** | **~$108 – $175+** | **Included in ArkenStone ($5 Lifetime)** |
+| **TOTAL MARKET VALUE** | **~$113 – $185+** | **Included in ArkenStone ($5 Lifetime)** |
 
 ---
 
@@ -198,7 +220,7 @@ open ArkenStone.app
 
 ---
 
-## ⚡ Early Access (v0.8.4) & Rapid Support
+## ⚡ Early Access (v0.8.5) & Rapid Support
 
 ArkenStone is under active, enthusiastic development. We adhere to transparent indie developer practices:
 

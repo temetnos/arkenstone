@@ -31,6 +31,49 @@ public struct ThermalTab: View {
                     }
                     Spacer()
                 }
+                
+                Divider().background(Color.white.opacity(0.08))
+                
+                // SMC Fan Telemetry or Fanless Banner
+                if monitor.thermal.fanData.isFanless {
+                    HStack(spacing: 6) {
+                        Image(systemName: "wind.slash")
+                            .font(.system(size: 11))
+                            .foregroundColor(ArkenTheme.cpuColor)
+                        Text(L10n.tr("Fanless Architecture (100% Silent Passive Cooling)", "Fansız Mimari (Sessiz Pasif Soğutma)"))
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text(L10n.tr("0 RPM", "0 RPM"))
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundColor(ArkenTheme.cpuColor)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.04))
+                    .cornerRadius(6)
+                } else {
+                    HStack(spacing: 8) {
+                        Image(systemName: "fan.fill")
+                            .font(.system(size: 11))
+                            .foregroundColor(ArkenTheme.cpuColor)
+                        Text(L10n.tr("Cooling Fans (\(monitor.thermal.fanData.count)):", "Soğutma Fanları (\(monitor.thermal.fanData.count)):"))
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        HStack(spacing: 6) {
+                            ForEach(0..<monitor.thermal.fanData.speeds.count, id: \.self) { idx in
+                                Text("Fan \(idx + 1): \(monitor.thermal.fanData.speeds[idx]) RPM")
+                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                    .foregroundColor(ArkenTheme.cpuColor)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.04))
+                    .cornerRadius(6)
+                }
             }
             
             // Major Sensor Cards Grid

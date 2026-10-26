@@ -34,6 +34,24 @@ public struct ScratchpadTab: View {
                     
                     Spacer()
                     
+                    // Detach to Floating Window Button
+                    Button(action: {
+                        StatusBarController.shared?.openDetachedNotes()
+                    }) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "arrow.up.right.square")
+                            Text(L10n.tr("Detach", "Pencereye Ayır"))
+                        }
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(ArkenTheme.tempColor)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(ArkenTheme.tempColor.opacity(0.15))
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .help(L10n.tr("Open Detached Floating Notes Window (Pinned on All Desktops)", "Ayrılabilir Yüzen Notlar Penceresini Aç (Tüm Masaüstlerinde Sabit)"))
+                    
                     // Export Button
                     if !scratchpad.content.isEmpty {
                         Button(action: {
@@ -119,11 +137,8 @@ public struct ScratchpadTab: View {
                         .padding(12)
                 }
                 
-                TextEditor(text: $scratchpad.content)
-                    .font(.system(size: scratchpad.fontSize, design: .monospaced))
-                    .padding(8)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
+                MacScratchpadEditor(text: $scratchpad.content, fontSize: scratchpad.fontSize)
+                    .padding(6)
             }
             .frame(height: 220)
             .overlay(
@@ -174,6 +189,107 @@ public struct ScratchpadTab: View {
             SoundManager.shared.play(.success)
         } catch {
             print("Failed to export notes: \(error)")
+        }
+    }
+}
+
+public struct MacScratchpadEditor: NSViewRepresentable {
+    @Binding var text: String
+    var fontSize: CGFloat
+    
+    public init(text: Binding<String>, fontSize: CGFloat = 11.5) {
+        self._text = text
+        self.fontSize = fontSize
+    }
+    
+    public func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    public func makeNSView(context: Context) -> NSScrollView {
+        let scrollView = NSScrollView()
+        scrollView.drawsBackground = false
+        scrollView.borderType = .noBorder
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        
+        let contentSize = scrollView.contentSize
+        let textView = ScratchpadTextView(frame: NSRect(origin: .zero, size: contentSize))
+        textView.minSize = NSSize(width: 0.0, height: contentSize.height)
+        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.containerSize = NSSize(width: contentSize.width, height: CGFloat.greatestFiniteMagnitude)
+        textView.textContainer?.widthTracksTextView = true
+        
+        textView.backgroundColor = .clear
+        textView.drawsBackground = false
+        textView.textColor = .labelColor
+        textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+        textView.isRichText = false
+        textView.allowsUndo = true
+        textView.delegate = context.coordinator
+        textView.insertionPointColor = NSColor.white
+        
+        textView.isSelectable = true
+        textView.isEditable = true
+        textView.string = text
+        
+        scrollView.documentView = textView
+        return scrollView
+    }
+    
+    public func updateNSView(_ nsView: NSScrollView, context: Context) {
+        guard let textView = nsView.documentView as? ScratchpadTextView else { return }
+        if textView.string != text {
+            textView.string = text
+        }
+        textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+    }
+    
+    public class Coordinator: NSObject, NSTextViewDelegate {
+        var parent: MacScratchpadEditor
+        
+        init(_ parent: MacScratchpadEditor) {
+            self.parent = parent
+        }
+        
+        public func textDidChange(_ notification: Notification) {
+            guard let textView = notification.object as? NSTextView else { return }
+            self.parent.text = textView.string
+        }
+    }
+}
+
+class ScratchpadTextView: NSTextView {
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard event.modifierFlags.contains(.command) else {
+            return super.performKeyEquivalent(with: event)
+        }
+        switch event.charactersIgnoringModifiers {
+        case "c", "C":
+            copy(nil)
+            return true
+        case "v", "V":
+            paste(nil)
+            return true
+        case "x", "X":
+            cut(nil)
+            return true
+        case "a", "A":
+            selectAll(nil)
+            return true
+        case "z", "Z":
+            if event.modifierFlags.contains(.shift) {
+                undoManager?.redo()
+            } else {
+                undoManager?.undo()
+            }
+            return true
+        default:
+            return super.performKeyEquivalent(with: event)
         }
     }
 }

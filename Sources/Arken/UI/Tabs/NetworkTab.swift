@@ -62,10 +62,12 @@ public struct NetworkTab: View {
                             .font(.system(size: 11, weight: .semibold))
                         Spacer()
                         HStack(spacing: 4) {
-                            Circle().fill(Color.green).frame(width: 6, height: 6)
-                            Text(L10n.tr("Online", "Çevrimiçi"))
+                            Circle()
+                                .fill(monitor.network.isConnected ? Color.green : Color.red.opacity(0.8))
+                                .frame(width: 6, height: 6)
+                            Text(monitor.network.isConnected ? L10n.tr("Online", "Çevrimiçi") : L10n.tr("Offline", "Çevrimdışı"))
                                 .font(.system(size: 9, weight: .semibold))
-                                .foregroundColor(.green)
+                                .foregroundColor(monitor.network.isConnected ? .green : .secondary)
                         }
                     }
                     
@@ -76,7 +78,7 @@ public struct NetworkTab: View {
                             Text(L10n.tr("Interface:", "Arayüz:"))
                                 .font(.system(size: 9))
                                 .foregroundColor(.secondary)
-                            Text("Wi-Fi (\(monitor.network.activeInterface))")
+                            Text(monitor.network.interfaceDisplayName)
                                 .font(.system(size: 11, weight: .bold))
                         }
                         Spacer()

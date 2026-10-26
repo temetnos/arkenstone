@@ -1,6 +1,7 @@
 import Foundation
 import Darwin
 import AppKit
+import SystemConfiguration
 
 public struct NetworkSnapshot {
     public var downloadSpeedBytesPerSec: Double = 0.0
@@ -10,6 +11,8 @@ public struct NetworkSnapshot {
     public var downloadSpeedFormatted: String = "0 KB/s"
     public var uploadSpeedFormatted: String = "0 KB/s"
     public var activeInterface: String = "en0"
+    public var interfaceDisplayName: String = "Wi-Fi (en0)"
+    public var isConnected: Bool = true
     public var ipAddress: String = "127.0.0.1"
     public var downloadHistory: [Double] = []
     public var uploadHistory: [Double] = []
@@ -35,32 +38,29 @@ public class NetworkMonitor {
         self.lastOutBytes = initial.obytes
         self.lastTimestamp = now
         self.lastIPCheckTimestamp = now
-        self.snapshot.totalDownloadedBytes = initial.ibytes
-        self.snapshot.totalUploadedBytes = initial.obytes
         
         let netInfo = getPrimaryInterfaceAndIP()
-        self.snapshot.ipAddress = netInfo.ip
-        self.snapshot.activeInterface = netInfo.interface
+        snapshot.ipAddress = netInfo.ip
+        snapshot.activeInterface = netInfo.interface
+        updateConnectionStatus(netInfo: netInfo)
         
-        // Listen for system wake-up to prevent huge delta speed spikes
+        // Listen for sleep / wake to immediately reset baseline and re-detect interface
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.resetAfterWake()
+            self?.handleSystemWake()
         }
-        
-        update()
     }
     
     deinit {
-        if let observer = wakeObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(observer)
+        if let obs = wakeObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(obs)
         }
     }
     
-    public func resetAfterWake() {
+    private func handleSystemWake() {
         let now = Date().timeIntervalSince1970
         let current = getNetworkBytes()
         lastInBytes = current.ibytes
@@ -72,13 +72,10 @@ public class NetworkMonitor {
         snapshot.downloadSpeedFormatted = "0 KB/s"
         snapshot.uploadSpeedFormatted = "0 KB/s"
         
-        // Update IP and active interface at a relaxed 10-second interval
-        if now - lastIPCheckTimestamp >= 10.0 {
-            lastIPCheckTimestamp = now
-            let netInfo = getPrimaryInterfaceAndIP()
-            snapshot.ipAddress = netInfo.ip
-            snapshot.activeInterface = netInfo.interface
-        }
+        let netInfo = getPrimaryInterfaceAndIP()
+        snapshot.ipAddress = netInfo.ip
+        snapshot.activeInterface = netInfo.interface
+        updateConnectionStatus(netInfo: netInfo)
     }
     
     public func update() {
@@ -86,8 +83,8 @@ public class NetworkMonitor {
         let now = Date().timeIntervalSince1970
         let timeDelta = now - lastTimestamp
         
-        // Prevent speed spikes after sleep, freeze, or large time gaps
-        if timeDelta > 5.0 {
+        // Prevent speed spikes after deep sleep (> 15.0s)
+        if timeDelta > 15.0 {
             lastInBytes = current.ibytes
             lastOutBytes = current.obytes
             lastTimestamp = now
@@ -123,13 +120,13 @@ public class NetworkMonitor {
             let netInfo = getPrimaryInterfaceAndIP()
             snapshot.ipAddress = netInfo.ip
             snapshot.activeInterface = netInfo.interface
+            updateConnectionStatus(netInfo: netInfo)
         }
         
         downloadHistoryBuffer.append(inDelta)
         if downloadHistoryBuffer.count > maxHistory {
             downloadHistoryBuffer.removeFirst()
         }
-        
         uploadHistoryBuffer.append(outDelta)
         if uploadHistoryBuffer.count > maxHistory {
             uploadHistoryBuffer.removeFirst()
@@ -139,36 +136,93 @@ public class NetworkMonitor {
         snapshot.uploadHistory = uploadHistoryBuffer
     }
     
-    private func getNetworkBytes() -> (ibytes: UInt64, obytes: UInt64) {
-        var ifap: UnsafeMutablePointer<ifaddrs>?
-        guard getifaddrs(&ifap) == 0, let first = ifap else { return (0, 0) }
-        defer { freeifaddrs(ifap) }
+    private func updateConnectionStatus(netInfo: (ip: String, interface: String)) {
+        if netInfo.interface == "-" || netInfo.ip.contains("Not Connected") || netInfo.ip.contains("Bağlı Değil") || netInfo.ip == "127.0.0.1" {
+            snapshot.isConnected = false
+            snapshot.interfaceDisplayName = L10n.tr("Not Connected", "Bağlı Değil")
+        } else {
+            snapshot.isConnected = true
+            snapshot.interfaceDisplayName = getInterfaceDisplayName(bsdName: netInfo.interface)
+        }
+    }
+    
+    private func getInterfaceDisplayName(bsdName: String) -> String {
+        guard bsdName != "-" && !bsdName.isEmpty else {
+            return L10n.tr("Not Connected", "Bağlı Değil")
+        }
         
-        var inBytes: UInt64 = 0
-        var outBytes: UInt64 = 0
+        // Inspect SystemConfiguration for native interface type and localized display name
+        let interfaces = SCNetworkInterfaceCopyAll() as [AnyObject]
+        for iface in interfaces {
+            let scIface = iface as! SCNetworkInterface
+                if let bsd = SCNetworkInterfaceGetBSDName(scIface) as String?, bsd == bsdName {
+                    let type = (SCNetworkInterfaceGetInterfaceType(scIface) as String?) ?? ""
+                    if type == (kSCNetworkInterfaceTypeIEEE80211 as String) {
+                        return "Wi-Fi (\(bsdName))"
+                    } else if type == (kSCNetworkInterfaceTypeEthernet as String) {
+                        return "Ethernet (\(bsdName))"
+                    } else if let localized = SCNetworkInterfaceGetLocalizedDisplayName(scIface) as String? {
+                        return "\(localized) (\(bsdName))"
+                    }
+                }
+            }
+        
+        if bsdName == "en0" {
+            return "Wi-Fi (en0)"
+        } else if bsdName.hasPrefix("en") {
+            return "Ethernet (\(bsdName))"
+        } else if bsdName.hasPrefix("bridge") || bsdName.hasPrefix("p2p") {
+            return "Hotspot / Bridge (\(bsdName))"
+        }
+        return bsdName
+    }
+    
+    private func getNetworkBytes() -> (ibytes: UInt64, obytes: UInt64) {
+        var totalIn: UInt64 = 0
+        var totalOut: UInt64 = 0
+        
+        var ifap: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&ifap) == 0, let first = ifap else {
+            return (0, 0)
+        }
+        defer { freeifaddrs(ifap) }
         
         var ptr: UnsafeMutablePointer<ifaddrs>? = first
         while let cur = ptr {
-            let name = String(cString: cur.pointee.ifa_name)
-            let family = cur.pointee.ifa_addr.pointee.sa_family
+            let flags = Int32(cur.pointee.ifa_flags)
+            let isUp = (flags & IFF_UP) == IFF_UP
+            let isLoopback = (flags & IFF_LOOPBACK) != 0
             
-            if family == UInt8(AF_LINK), let data = cur.pointee.ifa_data {
-                let ifData = data.assumingMemoryBound(to: if_data.self)
-                // Filter loopback and point-to-point non-physical interfaces
-                if !name.hasPrefix("lo") && !name.hasPrefix("utun") {
-                    inBytes += UInt64(ifData.pointee.ifi_ibytes)
-                    outBytes += UInt64(ifData.pointee.ifi_obytes)
+            if isUp && !isLoopback, let addr = cur.pointee.ifa_addr {
+                let family = addr.pointee.sa_family
+                let name = String(cString: cur.pointee.ifa_name)
+                
+                // Exclude virtual interfaces from byte counts
+                let isVirtual = name.hasPrefix("lo") || name.hasPrefix("utun") ||
+                                name.hasPrefix("awdl") || name.hasPrefix("llw") ||
+                                name.hasPrefix("bridge") || name.hasPrefix("gif") ||
+                                name.hasPrefix("stf") || name.hasPrefix("tailscale") ||
+                                name.hasPrefix("wg") || name.hasPrefix("tun") ||
+                                name.hasPrefix("tap") || name.hasPrefix("docker") ||
+                                name.hasPrefix("veth") || name.hasPrefix("p2p")
+                
+                if !isVirtual && family == UInt8(AF_LINK) {
+                    if let data = cur.pointee.ifa_data {
+                        let networkData = data.assumingMemoryBound(to: if_data.self)
+                        totalIn += UInt64(networkData.pointee.ifi_ibytes)
+                        totalOut += UInt64(networkData.pointee.ifi_obytes)
+                    }
                 }
             }
             ptr = cur.pointee.ifa_next
         }
-        return (inBytes, outBytes)
+        return (totalIn, totalOut)
     }
     
     private func getPrimaryInterfaceAndIP() -> (ip: String, interface: String) {
         var ifap: UnsafeMutablePointer<ifaddrs>?
         guard getifaddrs(&ifap) == 0, let first = ifap else {
-            return (L10n.tr("Not Connected", "Bağlı Değil"), "en0")
+            return (L10n.tr("Not Connected", "Bağlı Değil"), "-")
         }
         defer { freeifaddrs(ifap) }
         

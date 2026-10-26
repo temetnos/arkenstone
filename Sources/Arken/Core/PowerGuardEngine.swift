@@ -21,6 +21,12 @@ public class PowerGuardEngine: ObservableObject {
         }
     }
     
+    @Published public var isTopUpActive: Bool = false {
+        didSet {
+            UserDefaults.standard.set(isTopUpActive, forKey: "ArkenPowerGuardTopUp")
+        }
+    }
+    
     @Published public var isLimitReached: Bool = false
     @Published public var isBypassActive: Bool = false
     @Published public var isHelperInstalled: Bool = false
@@ -48,6 +54,9 @@ public class PowerGuardEngine: ObservableObject {
         let target = savedTarget > 0 ? savedTarget : legacyTarget
         if target >= 50 && target <= 95 {
             self.targetLimit = target
+        }
+        if let savedTopUp = UserDefaults.standard.object(forKey: "ArkenPowerGuardTopUp") as? Bool {
+            self.isTopUpActive = savedTopUp
         }
         
         requestNotificationPermission()
@@ -239,7 +248,68 @@ public class PowerGuardEngine: ObservableObject {
         }
     }
     
+    public func toggleTopUp() {
+        isTopUpActive.toggle()
+        if isTopUpActive {
+            startHardwareCharging()
+            SoundManager.shared.play(.pop)
+            notifyTopUpStarted()
+        } else {
+            SoundManager.shared.play(.pop)
+            if let b = HardwareMonitor.shared?.battery {
+                checkBattery(battery: b)
+            }
+        }
+    }
+    
+    private func notifyTopUpStarted() {
+        if sendNotificationOnLimit {
+            let content = UNMutableNotificationContent()
+            content.title = "⚡ Arken Top-Up Mode"
+            content.subtitle = L10n.tr("One-time Top-Up to 100% active", "Tek seferlik %100 tam şarj devrede")
+            content.body = L10n.tr("Battery charge limit temporarily bypassed. Will charge to full once.", "Batarya sınırı geçici olarak kaldırıldı. Pil bir kez tam dolacak.")
+            content.sound = .default
+            let req = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+            UNUserNotificationCenter.current().add(req, withCompletionHandler: nil)
+        }
+    }
+    
+    private func notifyTopUpCompleted() {
+        if playSoundOnLimit { SoundManager.shared.play(.success) }
+        if sendNotificationOnLimit {
+            let content = UNMutableNotificationContent()
+            content.title = "⚡ Arken Top-Up Complete"
+            content.subtitle = L10n.tr("Battery reached 100%", "Batarya %100 seviyesine ulaştı")
+            content.body = L10n.tr("Top-Up finished. Restored normal Power Guard protection limit.", "Tam şarj tamamlandı. Normal Power Guard koruma sınırına geri dönüldü.")
+            content.sound = .default
+            let req = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+            UNUserNotificationCenter.current().add(req, withCompletionHandler: nil)
+        }
+    }
+
     public func checkBattery(battery: BatterySnapshot) {
+        if isTopUpActive {
+            // Cancel top-up if unplugged
+            if !battery.isPluggedIn {
+                isTopUpActive = false
+                return
+            }
+            if battery.percentage >= 100 {
+                isTopUpActive = false
+                if isEnabled && isHelperInstalled {
+                    stopHardwareCharging()
+                }
+                notifyTopUpCompleted()
+                return
+            } else {
+                // Ensure charger is flowing
+                if isBypassActive {
+                    startHardwareCharging()
+                }
+                return
+            }
+        }
+
         guard isEnabled else {
             if isBypassActive {
                 startHardwareCharging()

@@ -8,7 +8,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 APP_NAME="ArkenStone"
 APP_BUNDLE="${PROJECT_ROOT}/${APP_NAME}.app"
-VERSION="0.8.4"
+if [ -f "${APP_BUNDLE}/Contents/Info.plist" ]; then
+    VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${APP_BUNDLE}/Contents/Info.plist" 2>/dev/null || echo "0.8.5")
+else
+    VERSION="0.8.5"
+fi
 DMG_NAME="${APP_NAME}-v${VERSION}.dmg"
 DMG_OUTPUT="${PROJECT_ROOT}/${DMG_NAME}"
 STAGING_DIR="/tmp/arkenstone_dmg_staging_$$"

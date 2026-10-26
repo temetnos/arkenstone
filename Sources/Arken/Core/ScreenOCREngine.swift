@@ -81,14 +81,18 @@ public class ScreenOCREngine: ObservableObject {
                 return
             }
             
-            // Recognize text via Apple Vision framework
-            self.performVisionOCR(cgImage: cgImage) { recognized in
+            // Recognize text & QR/barcodes via Apple Vision framework
+            self.performVisionOCR(cgImage: cgImage) { recognized, isQR in
                 
                 DispatchQueue.main.async {
                     self.isCapturing = false
                     if let text = recognized, !text.isEmpty {
                         self.lastRecognizedText = text
-                        self.statusMessage = L10n.tr("\(text.count) characters copied!", "\(text.count) karakter kopyalandı!")
+                        if isQR {
+                            self.statusMessage = L10n.tr("QR / Barcode detected & copied!", "QR / Barkod tespit edildi ve kopyalandı!")
+                        } else {
+                            self.statusMessage = L10n.tr("\(text.count) characters copied!", "\(text.count) karakter kopyalandı!")
+                        }
                         
                         // Copy to Pasteboard
                         let pboard = NSPasteboard.general
@@ -101,7 +105,7 @@ public class ScreenOCREngine: ObservableObject {
                         SoundManager.shared.play(.success)
                         completion?(text)
                     } else {
-                        self.statusMessage = L10n.tr("No text detected in selected area.", "Görselde metin tespit edilemedi.")
+                        self.statusMessage = L10n.tr("No text or QR code detected.", "Görselde metin veya QR kod tespit edilemedi.")
                         SoundManager.shared.play(.warning)
                         completion?(nil)
                     }
@@ -110,39 +114,45 @@ public class ScreenOCREngine: ObservableObject {
         }
     }
     
-    private func performVisionOCR(cgImage: CGImage, completion: @escaping (String?) -> Void) {
-        let request = VNRecognizeTextRequest { request, error in
-            guard error == nil else {
-                completion(nil)
-                return
-            }
-            
-            guard let observations = request.results as? [VNRecognizedTextObservation] else {
-                completion(nil)
-                return
-            }
-            
-            var lines: [String] = []
-            for observation in observations {
-                if let candidate = observation.topCandidates(1).first {
-                    lines.append(candidate.string)
+    private func performVisionOCR(cgImage: CGImage, completion: @escaping (String?, Bool) -> Void) {
+        var barcodePayload: String?
+        var textLines: [String] = []
+        
+        let barcodeRequest = VNDetectBarcodesRequest { request, error in
+            guard error == nil, let observations = request.results as? [VNBarcodeObservation] else { return }
+            for obs in observations {
+                if let payload = obs.payloadStringValue, !payload.isEmpty {
+                    barcodePayload = payload
+                    break
                 }
             }
-            
-            let fullText = lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-            completion(fullText.isEmpty ? nil : fullText)
         }
         
-        request.recognitionLevel = .accurate
-        request.usesLanguageCorrection = true
+        let textRequest = VNRecognizeTextRequest { request, error in
+            guard error == nil, let observations = request.results as? [VNRecognizedTextObservation] else { return }
+            for observation in observations {
+                if let candidate = observation.topCandidates(1).first {
+                    textLines.append(candidate.string)
+                }
+            }
+        }
+        
+        textRequest.recognitionLevel = .accurate
+        textRequest.usesLanguageCorrection = true
         // Support English, Turkish, code, numbers
-        request.recognitionLanguages = ["tr-TR", "en-US"]
+        textRequest.recognitionLanguages = ["tr-TR", "en-US"]
         
         let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
         do {
-            try handler.perform([request])
+            try handler.perform([barcodeRequest, textRequest])
+            if let qr = barcodePayload {
+                completion(qr, true)
+            } else {
+                let fullText = textLines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+                completion(fullText.isEmpty ? nil : fullText, false)
+            }
         } catch {
-            completion(nil)
+            completion(nil, false)
         }
     }
 }

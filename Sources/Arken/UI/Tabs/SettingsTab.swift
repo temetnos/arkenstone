@@ -441,6 +441,36 @@ public struct SettingsTab: View {
                 }
             }
             
+            // Global Keyboard Shortcuts Reference Card
+            GlassCard(padding: 12) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "keyboard.fill")
+                            .foregroundColor(ArkenTheme.cpuColor)
+                            .font(.system(size: 14))
+                        
+                        Text(L10n.tr("Global Shortcuts (Carbon Hotkeys)", "Global Kısayollar (Carbon Hotkeys)"))
+                            .font(.system(size: 11, weight: .bold))
+                        
+                        Spacer()
+                        
+                        Text("Zero TCC / Accessibility Required")
+                            .font(.system(size: 7.5, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    VStack(spacing: 4) {
+                        shortcutRow(key: "⌥ O", title: L10n.tr("Screen OCR & QR Code Scanner", "Ekran OCR & QR Kod Okuyucu"))
+                        shortcutRow(key: "⌥ C", title: L10n.tr("Color Eyedropper / Pipette", "Ekrandan Renk Seçici (Damlalık)"))
+                        shortcutRow(key: "⌥ M", title: L10n.tr("Global Microphone Mute Toggle", "Global Mikrofon Susturma"))
+                        shortcutRow(key: "⌥ D", title: L10n.tr("Detached Floating Drop Shelf", "Ayrılabilir Yüzen Dosya Rafı"))
+                        shortcutRow(key: "⌥ A", title: L10n.tr("Toggle ArkenStone Menu Bar Window", "ArkenStone Menü Çubuğu Penceresi"))
+                        shortcutRow(key: "⌥ K", title: L10n.tr("Screen & Keyboard Cleaning Lock", "Ekran & Klavye Temizlik Kilidi"))
+                        shortcutRow(key: "⌘1..9, 0", title: L10n.tr("Quick Switch Popover Tabs", "Pencere İçi Sekme Geçişleri"))
+                    }
+                }
+            }
+            
             // About & System Info
             GlassCard(padding: 10) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -460,6 +490,22 @@ public struct SettingsTab: View {
                         .foregroundColor(.secondary)
                 }
             }
+        }
+    }
+    
+    private func shortcutRow(key: String, title: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.system(size: 9))
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(key)
+                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                .padding(.horizontal, 5)
+                .padding(.vertical, 1.5)
+                .background(Color.white.opacity(0.1))
+                .foregroundColor(ArkenTheme.cpuColor)
+                .cornerRadius(4)
         }
     }
 }

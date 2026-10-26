@@ -73,6 +73,10 @@ public class HardwareMonitor: ObservableObject {
     private let networkMonitor = NetworkMonitor()
     public let processMonitor = ProcessMonitor()
     
+    // Background Telemetry Queue & Concurrency Lock
+    private let telemetryQueue = DispatchQueue(label: "com.citadel.arken.telemetry", qos: .utility)
+    private var isUpdatingTelemetry = false
+    
     // Adaptive Timer
     private var timer: Timer?
     public var isPopoverVisible: Bool = false {
@@ -118,39 +122,50 @@ public class HardwareMonitor: ObservableObject {
     }
     
     public func updateAll() {
-        cpuMonitor.update()
-        memoryMonitor.update()
-        gpuMonitor.update()
-        thermalMonitor.update()
-        batteryMonitor.update()
-        networkMonitor.update()
+        guard !isUpdatingTelemetry else { return }
+        isUpdatingTelemetry = true
         
-        // Check battery limit alerts & sync keep awake AC status
-        PowerGuardEngine.shared.checkBattery(battery: batteryMonitor.snapshot)
-        KeepAwakeEngine.shared.syncWithBatteryState(isPluggedIn: batteryMonitor.snapshot.isPluggedIn)
-        
-        // Top processes updated when popover is open
-        var memProcs: [ProcessUsageItem] = []
-        var cpuProcs: [ProcessUsageItem] = []
-        if isPopoverVisible {
-            let res = processMonitor.getTopProcesses(limit: 5)
-            memProcs = res.topMemory
-            cpuProcs = res.topCpu
-        }
-        
-        DispatchQueue.main.async { [weak self] in
+        telemetryQueue.async { [weak self] in
             guard let self = self else { return }
-            self.cpu = self.cpuMonitor.snapshot
-            self.memory = self.memoryMonitor.snapshot
-            self.gpu = self.gpuMonitor.snapshot
-            self.thermal = self.thermalMonitor.snapshot
-            self.battery = self.batteryMonitor.snapshot
-            self.network = self.networkMonitor.snapshot
+            defer { self.isUpdatingTelemetry = false }
+            
+            self.cpuMonitor.update()
+            self.memoryMonitor.update()
+            self.gpuMonitor.update()
+            self.thermalMonitor.update()
+            self.batteryMonitor.update()
+            self.networkMonitor.update()
+            
+            // Check battery limit alerts & sync keep awake AC status
+            PowerGuardEngine.shared.checkBattery(battery: self.batteryMonitor.snapshot)
+            KeepAwakeEngine.shared.syncWithBatteryState(isPluggedIn: self.batteryMonitor.snapshot.isPluggedIn)
+            
+            // Top processes updated when popover is open
+            var memProcs: [ProcessUsageItem] = []
+            var cpuProcs: [ProcessUsageItem] = []
             if self.isPopoverVisible {
-                self.topMemoryProcesses = memProcs
-                self.topCpuProcesses = cpuProcs
+                let res = self.processMonitor.getTopProcesses(limit: 5)
+                memProcs = res.topMemory
+                cpuProcs = res.topCpu
             }
-            self.updateUptime()
+            
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                self.cpu = self.cpuMonitor.snapshot
+                self.memory = self.memoryMonitor.snapshot
+                self.gpu = self.gpuMonitor.snapshot
+                self.thermal = self.thermalMonitor.snapshot
+                self.battery = self.batteryMonitor.snapshot
+                self.network = self.networkMonitor.snapshot
+                if self.isPopoverVisible {
+                    self.topMemoryProcesses = memProcs
+                    self.topCpuProcesses = cpuProcs
+                }
+                self.updateUptime()
+                
+                // Directly trigger status bar icon update (single source of truth)
+                StatusBarController.shared?.updateButtonContent()
+            }
         }
     }
     
