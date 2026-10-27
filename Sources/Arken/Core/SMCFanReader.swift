@@ -58,12 +58,12 @@ public class SMCFanReader {
         
         for i in 0..<totalFans {
             if let speedRes = readKey("F\(i)Ac", conn: conn) {
-                if speedRes.bytes.count >= 2 {
+                if speedRes.bytes.count >= 4 {
+                    let fVal = speedRes.bytes.withUnsafeBytes { $0.load(as: Float.self) }
+                    speeds.append(max(0, Int(fVal.rounded())))
+                } else if speedRes.bytes.count >= 2 {
                     let raw = (UInt16(speedRes.bytes[0]) << 8) | UInt16(speedRes.bytes[1])
                     speeds.append(Int(raw >> 2))
-                } else if speedRes.bytes.count >= 4 {
-                    let fVal = speedRes.bytes.withUnsafeBytes { $0.load(as: Float.self) }
-                    speeds.append(Int(fVal))
                 }
             }
         }

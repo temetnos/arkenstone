@@ -112,8 +112,46 @@ public class DiskCleanerEngine: ObservableObject {
     // Strict Whitelist of Safe Directories
     private let home = NSHomeDirectory()
     
+    public var hasFullDiskAccess: Bool {
+        let trashPath = ("~/.Trash" as NSString).expandingTildeInPath
+        return FileManager.default.isReadableFile(atPath: trashPath)
+    }
+    
+    public func openFullDiskAccessSettings() {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+    
     public init() {
         setupDefaultCategories()
+    }
+    
+    private func getAllAppCachePaths() -> [String] {
+        let fm = FileManager.default
+        let cachesPath = "\(home)/Library/Caches"
+        let dedicated: Set<String> = [
+            "\(home)/Library/Caches/Homebrew",
+            "\(home)/Library/Caches/pip",
+            "\(home)/Library/Caches/Yarn",
+            "\(home)/Library/Caches/com.apple.dt.Xcode",
+            "\(home)/Library/Caches/org.swift.swiftpm",
+            "\(home)/Library/Caches/node-gyp"
+        ]
+        
+        var paths: [String] = []
+        if let subdirs = try? fm.contentsOfDirectory(atPath: cachesPath) {
+            for sub in subdirs {
+                let fullPath = "\(cachesPath)/\(sub)"
+                if !dedicated.contains(fullPath) {
+                    var isDir: ObjCBool = false
+                    if fm.fileExists(atPath: fullPath, isDirectory: &isDir), isDir.boolValue {
+                        paths.append(fullPath)
+                    }
+                }
+            }
+        }
+        return paths
     }
     
     private func setupDefaultCategories() {
@@ -133,12 +171,13 @@ public class DiskCleanerEngine: ObservableObject {
                 id: "developer",
                 nameEn: "Xcode & Developer Build Caches",
                 nameTr: "Xcode & Geliştirici Geçici Dosyaları",
-                detailEn: "DerivedData and build artifacts (recreated automatically upon build)",
-                detailTr: "DerivedData ve derleme artıkları (sonraki derlemede yeniden üretilir)",
+                detailEn: "DerivedData, SwiftPM, and build artifacts (recreated automatically upon build)",
+                detailTr: "DerivedData, SwiftPM ve derleme artıkları (sonraki derlemede yeniden üretilir)",
                 icon: "hammer.fill",
                 paths: [
                     "\(home)/Library/Developer/Xcode/DerivedData",
                     "\(home)/Library/Caches/com.apple.dt.Xcode",
+                    "\(home)/Library/Caches/org.swift.swiftpm",
                     "\(home)/.cocoapods/cache"
                 ]
             ),
@@ -146,29 +185,25 @@ public class DiskCleanerEngine: ObservableObject {
                 id: "packages",
                 nameEn: "Package Manager Caches",
                 nameTr: "Paket Yöneticisi Önbellekleri",
-                detailEn: "Pip, npm, and yarn package download caches",
-                detailTr: "Pip, npm ve yarn bağımlılık indirme kalıntıları",
+                detailEn: "Pip, npm, yarn, node-gyp, and gradle caches",
+                detailTr: "Pip, npm, yarn, node-gyp ve gradle bağımlılık indirme kalıntıları",
                 icon: "cube.box.fill",
                 paths: [
                     "\(home)/Library/Caches/pip",
                     "\(home)/.npm/_cacache",
-                    "\(home)/Library/Caches/Yarn"
+                    "\(home)/Library/Caches/Yarn",
+                    "\(home)/Library/Caches/node-gyp",
+                    "\(home)/.gradle/caches"
                 ]
             ),
             CleanTargetCategory(
                 id: "app_caches",
-                nameEn: "App Media & Web Caches",
-                nameTr: "Uygulama Medya Önbellekleri",
-                detailEn: "Temporary cache data from Spotify, Chrome, Slack, Safari etc.",
-                detailTr: "Spotify, Chrome, Slack vb. uygulamaların geçici medya verileri",
+                nameEn: "App & Browser Caches",
+                nameTr: "Uygulama & Tarayıcı Önbellekleri",
+                detailEn: "Temporary cache data from browsers and desktop applications",
+                detailTr: "Tarayıcılar ve masaüstü uygulamalarının geçici medya ve web verileri",
                 icon: "app.badge.checkmark.fill",
-                paths: [
-                    "\(home)/Library/Caches/com.spotify.client/Data",
-                    "\(home)/Library/Caches/Google/Chrome/Default/Cache",
-                    "\(home)/Library/Caches/com.brave.Browser/Default/Cache",
-                    "\(home)/Library/Caches/Slack/Cache",
-                    "\(home)/Library/Caches/com.apple.Safari/WebKitCache"
-                ]
+                paths: getAllAppCachePaths()
             ),
             CleanTargetCategory(
                 id: "logs",
@@ -178,7 +213,8 @@ public class DiskCleanerEngine: ObservableObject {
                 detailTr: "Eski crash logları ve hata kayıtları",
                 icon: "doc.text.magnifyingglass",
                 paths: [
-                    "\(home)/Library/Logs/DiagnosticReports"
+                    "\(home)/Library/Logs/DiagnosticReports",
+                    "\(home)/Library/Logs"
                 ]
             ),
             CleanTargetCategory(
@@ -204,6 +240,22 @@ public class DiskCleanerEngine: ObservableObject {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
             var updatedCategories = self.categories
+            
+            // Refresh dynamic app cache paths
+            if let idx = updatedCategories.firstIndex(where: { $0.id == "app_caches" }) {
+                updatedCategories[idx] = CleanTargetCategory(
+                    id: updatedCategories[idx].id,
+                    nameEn: updatedCategories[idx].nameEn,
+                    nameTr: updatedCategories[idx].nameTr,
+                    detailEn: updatedCategories[idx].detailEn,
+                    detailTr: updatedCategories[idx].detailTr,
+                    icon: updatedCategories[idx].icon,
+                    paths: self.getAllAppCachePaths(),
+                    sizeBytes: 0,
+                    isSelected: updatedCategories[idx].isSelected,
+                    isCleaned: false
+                )
+            }
             
             for i in 0..<updatedCategories.count {
                 var total: UInt64 = 0
@@ -241,23 +293,32 @@ public class DiskCleanerEngine: ObservableObject {
                 guard updatedCategories[i].isSelected && !updatedCategories[i].isCleaned else { continue }
                 
                 var categoryFreed: UInt64 = 0
-                for path in updatedCategories[i].paths {
-                    // Safety assertion check
-                    guard self.isPathSafe(path) && fm.fileExists(atPath: path) else { continue }
-                    
-                    let pathSize = self.calculateFolderSize(path: path)
-                    
-                    // Empty contents of folder safely
-                    if let contents = try? fm.contentsOfDirectory(atPath: path) {
-                        for item in contents {
-                            let itemPath = (path as NSString).appendingPathComponent(item)
-                            // Strict check to never delete symlinks to system or forbidden paths
-                            if self.isPathSafe(itemPath) {
-                                try? fm.removeItem(atPath: itemPath)
+                
+                if updatedCategories[i].id == "trash" && !self.hasFullDiskAccess {
+                    // Fallback: If Full Disk Access is not granted for ~/.Trash, ask Finder to empty trash
+                    let script = NSAppleScript(source: "tell application \"Finder\" to empty trash")
+                    var err: NSDictionary?
+                    script?.executeAndReturnError(&err)
+                    categoryFreed += updatedCategories[i].sizeBytes
+                } else {
+                    for path in updatedCategories[i].paths {
+                        // Safety assertion check
+                        guard self.isPathSafe(path) && fm.fileExists(atPath: path) else { continue }
+                        
+                        let pathSize = self.calculateFolderSize(path: path)
+                        
+                        // Empty contents of folder safely
+                        if let contents = try? fm.contentsOfDirectory(atPath: path) {
+                            for item in contents {
+                                let itemPath = (path as NSString).appendingPathComponent(item)
+                                // Strict check to never delete symlinks to system or forbidden paths
+                                if self.isPathSafe(itemPath) {
+                                    try? fm.removeItem(atPath: itemPath)
+                                }
                             }
                         }
+                        categoryFreed += pathSize
                     }
-                    categoryFreed += pathSize
                 }
                 
                 freedBytes += categoryFreed
@@ -318,10 +379,11 @@ public class DiskCleanerEngine: ObservableObject {
         let allowedPrefixes = [
             "\(home)/Library/Caches",
             "\(home)/Library/Developer/Xcode/DerivedData",
-            "\(home)/Library/Logs/DiagnosticReports",
+            "\(home)/Library/Logs",
             "\(home)/.Trash",
             "\(home)/.cocoapods/cache",
-            "\(home)/.npm/_cacache"
+            "\(home)/.npm/_cacache",
+            "\(home)/.gradle/caches"
         ]
         
         for allowed in allowedPrefixes {

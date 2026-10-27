@@ -72,28 +72,40 @@ public struct PopoverView: View {
         VStack(spacing: 0) {
             // Header Bar
             HStack(spacing: 8) {
-                // Official App Icon (ArkenStone Squircle)
-                Image(nsImage: AppInfo.appIcon)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 24, height: 24)
-                    .clipShape(RoundedRectangle(cornerRadius: 5.5, style: .continuous))
-                    .shadow(color: ArkenTheme.cpuColor.opacity(0.35), radius: 4, x: 0, y: 1)
-                    .help("ArkenStone \(AppInfo.formattedVersion)")
-                
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: 4) {
-                        Text("ARKEN")
-                            .font(.system(size: 12, weight: .black, design: .rounded))
-                            .tracking(1.2)
-                        Text(AppInfo.formattedVersion)
-                            .font(.system(size: 8.5, weight: .bold))
-                            .foregroundColor(ArkenTheme.cpuColor)
+                // Official App Icon (ArkenStone Squircle) & Header - Click to go to Overview
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                        selectedTab = .overview
                     }
-                    Text("\(monitor.macModel) • \(monitor.chipName)")
-                        .font(.system(size: 9))
-                        .foregroundColor(.secondary)
+                    SoundManager.shared.play(.pop)
+                }) {
+                    HStack(spacing: 8) {
+                        Image(nsImage: AppInfo.appIcon)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 24, height: 24)
+                            .clipShape(RoundedRectangle(cornerRadius: 5.5, style: .continuous))
+                            .shadow(color: ArkenTheme.cpuColor.opacity(0.35), radius: 4, x: 0, y: 1)
+                        
+                        VStack(alignment: .leading, spacing: 0) {
+                            HStack(spacing: 4) {
+                                Text("ARKEN")
+                                    .font(.system(size: 12, weight: .black, design: .rounded))
+                                    .tracking(1.2)
+                                    .foregroundColor(.primary)
+                                Text(AppInfo.formattedVersion)
+                                    .font(.system(size: 8.5, weight: .bold))
+                                    .foregroundColor(ArkenTheme.cpuColor)
+                            }
+                            Text("\(monitor.macModel) • \(monitor.chipName)")
+                                .font(.system(size: 9))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(PlainButtonStyle())
+                .help(L10n.tr("Overview (⌘1)", "Genel Bakış (⌘1)"))
                 
                 Spacer()
                 
@@ -259,26 +271,6 @@ public struct PopoverView: View {
         }
         .frame(width: 385, height: 460)
         .background(VisualEffectBackground())
-        .background(
-            Group {
-                Button("") { selectedTab = .overview }.keyboardShortcut("1", modifiers: .command)
-                Button("") { selectedTab = .cpu }.keyboardShortcut("2", modifiers: .command)
-                Button("") { selectedTab = .gpu }.keyboardShortcut("3", modifiers: .command)
-                Button("") { selectedTab = .ram }.keyboardShortcut("4", modifiers: .command)
-                Button("") { selectedTab = .network }.keyboardShortcut("5", modifiers: .command)
-                Button("") { selectedTab = .ports }.keyboardShortcut("6", modifiers: .command)
-                Button("") { selectedTab = .thermal }.keyboardShortcut("7", modifiers: .command)
-                Button("") { selectedTab = .battery }.keyboardShortcut("8", modifiers: .command)
-                Button("") { selectedTab = .shelf }.keyboardShortcut("9", modifiers: .command)
-                Button("") { selectedTab = .clipboard }.keyboardShortcut("0", modifiers: .command)
-                Button("") { selectedTab = .scratchpad }.keyboardShortcut("n", modifiers: .command)
-                Button("") { selectedTab = .cleaner }.keyboardShortcut("k", modifiers: .command)
-                Button("") { selectedTab = .settings }.keyboardShortcut(",", modifiers: .command)
-                Button("") { StatusBarController.shared?.closeMainPopover() }.keyboardShortcut(.cancelAction)
-            }
-            .frame(width: 0, height: 0)
-            .opacity(0)
-        )
         .onAppear {
             keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
                 // ESC key (code 53)

@@ -317,10 +317,42 @@ public struct DiskCleanerTab: View {
                 }
             }
             
+            // Full Disk Access Banner for Trash & Protected Caches
+            if !cleaner.hasFullDiskAccess {
+                GlassCard(padding: 8) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "lock.shield.fill")
+                            .foregroundColor(.orange)
+                            .font(.system(size: 13))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L10n.tr("Full Disk Access Recommended", "Tam Disk Erişimi Önerilir"))
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.orange)
+                            Text(L10n.tr("Grant access in macOS Settings to scan User Trash & system files.", "Çöp Sepeti ve korumalı dosyaları tam taramak için Sistem Ayarları'ndan Tam Disk Erişimi verin."))
+                                .font(.system(size: 8.5))
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Button(action: {
+                            cleaner.openFullDiskAccessSettings()
+                        }) {
+                            Text(L10n.tr("Grant Access", "İzin Ver"))
+                                .font(.system(size: 9.5, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.orange.opacity(0.85))
+                                .clipShape(Capsule())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+            }
+            
             // Category Checklist
             VStack(spacing: 6) {
                 ForEach(cleaner.categories) { cat in
-                    CleanCategoryRow(category: cat) {
+                    CleanCategoryRow(category: cat, hasFullDiskAccess: cleaner.hasFullDiskAccess) {
                         cleaner.toggleCategory(id: cat.id)
                     }
                 }
@@ -347,6 +379,7 @@ public struct DiskCleanerTab: View {
 // Category Row Component
 struct CleanCategoryRow: View {
     let category: CleanTargetCategory
+    var hasFullDiskAccess: Bool = true
     var onToggle: () -> Void
     
     var body: some View {
@@ -389,6 +422,10 @@ struct CleanCategoryRow: View {
                 .padding(.vertical, 2)
                 .background(ArkenTheme.batteryColor.opacity(0.15))
                 .clipShape(Capsule())
+            } else if category.id == "trash" && !hasFullDiskAccess && category.sizeBytes == 0 {
+                Text(L10n.tr("Permission Required", "İzin Gerekli"))
+                    .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                    .foregroundColor(.orange)
             } else {
                 Text(category.sizeFormatted)
                     .font(.system(size: 11, weight: .bold, design: .rounded))

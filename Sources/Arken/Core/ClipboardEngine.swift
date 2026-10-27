@@ -407,6 +407,7 @@ public class ClipboardEngine: ObservableObject {
         let pboard = NSPasteboard.general
         pboard.clearContents()
         pboard.setString(transformed, forType: .string)
+        checkPasteboard()
         SoundManager.shared.play(.pop)
     }
 }
