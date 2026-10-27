@@ -465,6 +465,14 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         awakeItem.target = self
         menu.addItem(awakeItem)
         
+        let clamshellEngine = KeepAwakeEngine.shared
+        let clamshellStatus = clamshellEngine.isClamshellEnabled
+            ? (clamshellEngine.isClamshellActive ? L10n.tr("Active (AC Connected)", "Açık (Şarjda)") : L10n.tr("Standby (Connect AC)", "Beklemede (Şarj Tak)"))
+            : L10n.tr("Disabled (Enable)", "Kapalı (Aç)")
+        let clamshellItem = NSMenuItem(title: L10n.tr("💻 Clamshell (Lid-Closed): \(clamshellStatus)", "💻 Kapak Kapalı (Clamshell): \(clamshellStatus)"), action: #selector(toggleClamshellFromMenu), keyEquivalent: "")
+        clamshellItem.target = self
+        menu.addItem(clamshellItem)
+        
         let isDesktopHidden = DesktopFocusEngine.shared.isDesktopHidden
         let desktopTitle = isDesktopHidden ? L10n.tr("🖥️ Show Desktop Icons", "🖥️ Masaüstü Simgelerini Göster") : L10n.tr("🖥️ Hide Desktop Icons (Focus)", "🖥️ Masaüstü Simgelerini Gizle (Odak)")
         let desktopItem = NSMenuItem(title: desktopTitle, action: #selector(toggleDesktopIconsFromMenu), keyEquivalent: "h")
@@ -560,6 +568,11 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
     @objc private func toggleKeepAwake() {
         KeepAwakeEngine.shared.toggle()
         updateButtonContent()
+    }
+    
+    @objc private func toggleClamshellFromMenu() {
+        KeepAwakeEngine.shared.toggleClamshell()
+        SoundManager.shared.play(.pop)
     }
     
     @objc private func toggleLaunchAtLogin() {

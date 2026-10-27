@@ -124,20 +124,21 @@ public struct OverviewTab: View {
                     .help(L10n.tr("Open Clipboard History tab", "Pano Geçmişi sekmesini aç"))
                 }
                 
-                // Tier 2: Live System Toggles (Keep Awake, Desktop Focus, Power Guard)
-                HStack(spacing: 6) {
+                // Tier 2: Live System Toggles (Keep Awake, Clamshell, Desktop Focus, Power Guard)
+                HStack(spacing: 5) {
                     // Keep Awake (Caffeine) Toggle Button
                     Button(action: {
                         keepAwake.toggle()
+                        SoundManager.shared.play(.pop)
                     }) {
-                        HStack(spacing: 4.5) {
+                        HStack(spacing: 3.5) {
                             Image(systemName: keepAwake.isActive ? "cup.and.saucer.fill" : "cup.and.saucer")
-                                .font(.system(size: 10))
+                                .font(.system(size: 9))
                                 .foregroundColor(keepAwake.isActive ? ArkenTheme.tempColor : .secondary)
-                            Text(keepAwake.isActive ? L10n.tr("Awake", "Uyanık") : L10n.tr("Sleep", "Uykuda"))
-                                .font(.system(size: 9.5, weight: .semibold))
+                            Text(keepAwake.isActive ? L10n.tr("Awake", "Uyanık") : L10n.tr("Sleep", "Uyku"))
+                                .font(.system(size: 9, weight: .semibold))
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.85)
+                                .minimumScaleFactor(0.8)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 4.5)
@@ -152,18 +153,46 @@ public struct OverviewTab: View {
                     .buttonStyle(PlainButtonStyle())
                     .help(L10n.tr("Prevent system sleep (Caffeine)", "Sistem uykusunu engelle (Caffeine)"))
                     
+                    // Clamshell Mode (Lid-Closed Awake) Toggle Button
+                    Button(action: {
+                        keepAwake.toggleClamshell()
+                        SoundManager.shared.play(.pop)
+                    }) {
+                        HStack(spacing: 3.5) {
+                            Image(systemName: keepAwake.isClamshellActive ? "macbook.and.ipad" : (keepAwake.isClamshellEnabled ? "exclamationmark.triangle.fill" : "macbook"))
+                                .font(.system(size: 9))
+                                .foregroundColor(keepAwake.isClamshellActive ? .green : (keepAwake.isClamshellEnabled ? .orange : .secondary))
+                            Text(keepAwake.isClamshellActive ? L10n.tr("Lid ON", "Kapak Açık") : (keepAwake.isClamshellEnabled ? L10n.tr("⚡️ Plug In", "⚡️ Şarj Tak") : L10n.tr("Clamshell", "Kapak")))
+                                .font(.system(size: 9, weight: .semibold))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4.5)
+                        .background(keepAwake.isClamshellActive ? Color.green.opacity(0.16) : (keepAwake.isClamshellEnabled ? Color.orange.opacity(0.15) : Color.white.opacity(0.05)))
+                        .foregroundColor(keepAwake.isClamshellActive ? .green : (keepAwake.isClamshellEnabled ? .orange : .primary))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(keepAwake.isClamshellActive ? Color.green.opacity(0.35) : (keepAwake.isClamshellEnabled ? Color.orange.opacity(0.35) : Color.white.opacity(0.08)), lineWidth: 0.5)
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .help(L10n.tr("Clamshell Mode: Keep Mac awake when lid is closed (Requires AC power)", "Kapak Kapalı Modu: Kapak kapatıldığında Mac'i uyanık tut (Şarjda çalışır)"))
+                    
                     // Desktop Focus Toggle Button
                     Button(action: {
                         desktopFocus.toggleDesktopIcons()
+                        SoundManager.shared.play(.pop)
                     }) {
-                        HStack(spacing: 4.5) {
+                        HStack(spacing: 3.5) {
                             Image(systemName: desktopFocus.isDesktopHidden ? "eye.slash.fill" : "desktopcomputer")
-                                .font(.system(size: 10))
+                                .font(.system(size: 9))
                                 .foregroundColor(desktopFocus.isDesktopHidden ? ArkenTheme.tempColor : ArkenTheme.accentColor)
-                            Text(desktopFocus.isDesktopHidden ? L10n.tr("Icons Hidden", "Gizli") : L10n.tr("Desktop", "Masaüstü"))
-                                .font(.system(size: 9.5, weight: .semibold))
+                            Text(desktopFocus.isDesktopHidden ? L10n.tr("Focus", "Odak") : L10n.tr("Desktop", "Masaüstü"))
+                                .font(.system(size: 9, weight: .semibold))
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.85)
+                                .minimumScaleFactor(0.8)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 4.5)
@@ -182,15 +211,15 @@ public struct OverviewTab: View {
                     Button(action: {
                         onSelectTab?(.battery)
                     }) {
-                        HStack(spacing: 4) {
+                        HStack(spacing: 3.5) {
                             Image(systemName: powerGuard.isBypassActive ? "shield.fill" : (powerGuard.isEnabled ? "shield.lefthalf.filled" : "shield"))
-                                .font(.system(size: 9.5))
+                                .font(.system(size: 9))
                                 .foregroundColor(powerGuard.isBypassActive ? .green : (powerGuard.isEnabled ? ArkenTheme.batteryColor : .secondary))
-                            Text(powerGuard.isBypassActive ? "Bypass" : (powerGuard.isEnabled ? (LocalizationManager.shared.language == .tr ? "%\(powerGuard.targetLimit) Sınır" : "\(powerGuard.targetLimit)%") : L10n.tr("Normal", "Normal")))
-                                .font(.system(size: 9.5, weight: .semibold))
+                            Text(powerGuard.isBypassActive ? "Bypass" : (powerGuard.isEnabled ? (LocalizationManager.shared.language == .tr ? "%\(powerGuard.targetLimit)" : "\(powerGuard.targetLimit)%") : L10n.tr("Normal", "Normal")))
+                                .font(.system(size: 9, weight: .semibold))
                                 .foregroundColor(powerGuard.isBypassActive ? .green : (powerGuard.isEnabled ? ArkenTheme.batteryColor : .secondary))
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.85)
+                                .minimumScaleFactor(0.8)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 4.5)

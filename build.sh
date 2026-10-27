@@ -90,6 +90,8 @@ cat << 'EOF' > "${CONTENTS_DIR}/Info.plist"
     <true/>
     <key>NSScreenCaptureUsageDescription</key>
     <string>ArkenStone requires screen capture access to recognize and copy text from your screen (OCR).</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>ArkenStone uses AppleEvents to interact with Finder for actions like emptying the trash upon user request.</string>
 </dict>
 </plist>
 EOF

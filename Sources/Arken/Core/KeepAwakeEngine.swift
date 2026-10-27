@@ -142,6 +142,10 @@ public class KeepAwakeEngine: ObservableObject {
     }
     
     // MARK: - Clamshell (Lid-Closed) Anti-Sleep Mode
+    public func toggleClamshell() {
+        setClamshellEnabled(!isClamshellEnabled)
+    }
+    
     public func setClamshellEnabled(_ enabled: Bool) {
         self.isClamshellEnabled = enabled
         UserDefaults.standard.set(enabled, forKey: "ArkenClamshellEnabled")
