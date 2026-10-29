@@ -91,10 +91,32 @@ public class PortManagerEngine: ObservableObject {
         let pid = item.pid
         guard pid > 1 else { return }
         
-        // Send SIGTERM, fallback to SIGKILL if refused
+        Darwin.errno = 0
         let termRes = kill(pid, SIGTERM)
         if termRes != 0 {
-            _ = kill(pid, SIGKILL)
+            if Darwin.errno == EPERM {
+                DispatchQueue.main.async {
+                    self.statusMessage = L10n.tr(
+                        "Permission denied: Process owned by root/system (PID \(pid))",
+                        "Yetki reddedildi: Root/Sistem süreci (PID \(pid))"
+                    )
+                    SoundManager.shared.play(.warning)
+                }
+                return
+            }
+            
+            Darwin.errno = 0
+            let killRes = kill(pid, SIGKILL)
+            if killRes != 0 && Darwin.errno == EPERM {
+                DispatchQueue.main.async {
+                    self.statusMessage = L10n.tr(
+                        "Permission denied: Process owned by root/system (PID \(pid))",
+                        "Yetki reddedildi: Root/Sistem süreci (PID \(pid))"
+                    )
+                    SoundManager.shared.play(.warning)
+                }
+                return
+            }
         }
         
         // Ensure stubborn/hung processes (e.g. node, docker, python) actually die

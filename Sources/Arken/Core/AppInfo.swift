@@ -2,11 +2,11 @@ import Foundation
 import AppKit
 
 public struct AppInfo {
-    public static let version = "0.8.5"
-    public static let buildNumber = 85
+    public static let version = "0.8.6"
+    public static let buildNumber = 86
     public static let name = "ArkenStone"
     public static let shortName = "Arken"
-    public static let formattedVersion = "v0.8.5"
+    public static let formattedVersion = "v0.8.6"
     public static let copyright = "© 2026 temetnos"
     
     /// Cached official app icon for in-app UI presentation

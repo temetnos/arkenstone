@@ -168,7 +168,8 @@ public class NetworkMonitor {
             }
         
         if bsdName == "en0" {
-            return "Wi-Fi (en0)"
+            let isDesktop = HardwareMonitor.shared?.battery.hasBattery == false
+            return isDesktop ? "Ethernet (en0)" : "Wi-Fi (en0)"
         } else if bsdName.hasPrefix("en") {
             return "Ethernet (\(bsdName))"
         } else if bsdName.hasPrefix("bridge") || bsdName.hasPrefix("p2p") {

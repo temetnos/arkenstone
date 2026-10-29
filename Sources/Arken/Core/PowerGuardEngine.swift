@@ -12,12 +12,14 @@ public class PowerGuardEngine: ObservableObject {
             if !isEnabled && isBypassActive {
                 startHardwareCharging()
             }
+            hasAlertedForLimit = false
         }
     }
     
     @Published public var targetLimit: Int = 80 {
         didSet {
             UserDefaults.standard.set(targetLimit, forKey: "ArkenPowerGuardTarget")
+            hasAlertedForLimit = false
         }
     }
     
@@ -41,7 +43,7 @@ public class PowerGuardEngine: ObservableObject {
         }
         return "/usr/local/bin/palantir-power-helper"
     }
-    private var lastNotifiedPercentage: Int = 0
+    private var hasAlertedForLimit: Bool = false
     
     public init() {
         if let savedEnabled = UserDefaults.standard.object(forKey: "ArkenPowerGuardEnabled") as? Bool {
@@ -292,6 +294,7 @@ public class PowerGuardEngine: ObservableObject {
             // Cancel top-up if unplugged
             if !battery.isPluggedIn {
                 isTopUpActive = false
+                hasAlertedForLimit = false
                 return
             }
             if battery.percentage >= 100 {
@@ -315,6 +318,15 @@ public class PowerGuardEngine: ObservableObject {
                 startHardwareCharging()
             }
             isLimitReached = false
+            hasAlertedForLimit = false
+            return
+        }
+        
+        // Power Guard limits charging on AC power.
+        // When running on battery power (discharging), reset alert state and never notify!
+        guard battery.isPluggedIn else {
+            isLimitReached = false
+            hasAlertedForLimit = false
             return
         }
         
@@ -327,9 +339,9 @@ public class PowerGuardEngine: ObservableObject {
                 stopHardwareCharging()
             }
             
-            // Send alert if we haven't alerted for this charging session yet
-            if lastNotifiedPercentage != current {
-                lastNotifiedPercentage = current
+            // Send alert ONLY ONCE when reaching or exceeding the limit for this charging session
+            if !hasAlertedForLimit {
+                hasAlertedForLimit = true
                 notifyUser(currentPercentage: current)
             }
         } else if current < targetLimit - 2 {
@@ -338,7 +350,7 @@ public class PowerGuardEngine: ObservableObject {
                 startHardwareCharging()
             }
             isLimitReached = false
-            lastNotifiedPercentage = 0
+            hasAlertedForLimit = false
         }
     }
     

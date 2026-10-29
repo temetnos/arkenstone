@@ -21,7 +21,7 @@ SOURCES=$(find Sources -name "*.swift")
 # Compile with optimization
 swiftc -parse-as-library \
     -module-cache-path "${CACHE_DIR}" \
-    -target arm64-apple-macos15.0 \
+    -target arm64-apple-macos14.0 \
     -framework AppKit \
     -framework SwiftUI \
     -framework IOKit \
@@ -37,7 +37,7 @@ swiftc -parse-as-library \
 
 # Compile Arken Power Helper for Apple Silicon SMC
 echo "⚡ Compiling Arken Power Helper (SMC)..."
-clang -DCMD_TOOL_BUILD -O2 -framework IOKit \
+clang -target arm64-apple-macos14.0 -DCMD_TOOL_BUILD -O2 -framework IOKit \
     -I Sources/Arken/Helper \
     Sources/Arken/Helper/smc_lib.c \
     Sources/Arken/Helper/arken-power-helper.c \
@@ -77,9 +77,9 @@ cat << 'EOF' > "${CONTENTS_DIR}/Info.plist"
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.8.5</string>
+    <string>0.8.6</string>
     <key>CFBundleVersion</key>
-    <string>85</string>
+    <string>86</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>

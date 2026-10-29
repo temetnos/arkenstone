@@ -11,6 +11,7 @@ public class AudioMuteEngine: ObservableObject {
     
     private var currentListeningDeviceID: AudioObjectID = 0
     private var deviceChangeListenerRegistered = false
+    private var muteListenerBlock: AudioObjectPropertyListenerBlock?
     
     public init() {
         updateMuteState()
@@ -50,6 +51,16 @@ public class AudioMuteEngine: ObservableObject {
         guard let deviceID = getDefaultInputDevice() else { return }
         
         if currentListeningDeviceID != deviceID {
+            // Clean up listener on old device if present
+            if currentListeningDeviceID != 0, let oldBlock = muteListenerBlock {
+                var oldAddress = AudioObjectPropertyAddress(
+                    mSelector: kAudioDevicePropertyMute,
+                    mScope: kAudioDevicePropertyScopeInput,
+                    mElement: kAudioObjectPropertyElementMain
+                )
+                AudioObjectRemovePropertyListenerBlock(currentListeningDeviceID, &oldAddress, DispatchQueue.main, oldBlock)
+            }
+            
             currentListeningDeviceID = deviceID
             
             var muteAddress = AudioObjectPropertyAddress(
@@ -58,13 +69,17 @@ public class AudioMuteEngine: ObservableObject {
                 mElement: kAudioObjectPropertyElementMain
             )
             
+            let block: AudioObjectPropertyListenerBlock = { [weak self] (_, _) in
+                self?.updateMuteState()
+            }
+            self.muteListenerBlock = block
+            
             _ = AudioObjectAddPropertyListenerBlock(
                 deviceID,
                 &muteAddress,
-                DispatchQueue.main
-            ) { [weak self] (_, _) in
-                self?.updateMuteState()
-            }
+                DispatchQueue.main,
+                block
+            )
         }
     }
     
@@ -96,6 +111,7 @@ public class AudioMuteEngine: ObservableObject {
         if status == noErr {
             DispatchQueue.main.async {
                 self.isMuted = mute
+                StatusBarController.shared?.updateButtonContent()
                 if mute {
                     SoundManager.shared.play(.pop)
                 } else {
@@ -120,6 +136,7 @@ public class AudioMuteEngine: ObservableObject {
         if AudioObjectGetPropertyData(deviceID, &muteAddress, 0, nil, &size, &isMutedVal) == noErr {
             DispatchQueue.main.async {
                 self.isMuted = (isMutedVal != 0)
+                StatusBarController.shared?.updateButtonContent()
             }
         }
         

@@ -212,6 +212,7 @@ struct ShelfListRow: View {
             if item.isApplication {
                 ShelfCleanButton {
                     DiskCleanerEngine.shared.scanApp(url: item.url)
+                    StatusBarController.shared?.selectTab(.cleaner)
                     NotificationCenter.default.post(name: NSNotification.Name("ArkenSelectTab"), object: ArkenTab.cleaner)
                 }
                 .frame(width: 58, height: 18)
@@ -254,6 +255,7 @@ struct ShelfListRow: View {
             if item.isApplication {
                 Button(action: {
                     DiskCleanerEngine.shared.scanApp(url: item.url)
+                    StatusBarController.shared?.selectTab(.cleaner)
                     NotificationCenter.default.post(name: NSNotification.Name("ArkenSelectTab"), object: ArkenTab.cleaner)
                 }) {
                     Text(L10n.tr("🧹 Clean App Leftovers...", "🧹 Uygulama Kalıntılarını Temizle..."))

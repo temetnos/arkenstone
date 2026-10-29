@@ -137,39 +137,42 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         let dlSpeed = monitor.network.downloadSpeedFormatted
         let ulSpeed = monitor.network.uploadSpeedFormatted
         
-        var shelfSuffix = ""
+        var statusSuffix = ""
+        if AudioMuteEngine.shared.isMuted {
+            statusSuffix += " 🔇"
+        }
         if shelfCount > 0 {
-            shelfSuffix = " [📁\(shelfCount)]"
+            statusSuffix += " [📁\(shelfCount)]"
         } else if isBypass {
-            shelfSuffix = " [🛡️]"
+            statusSuffix += " [🛡️]"
         }
         
         switch mode {
         case .iconOnly:
-            button.title = shelfSuffix
+            button.title = statusSuffix
         case .cpuOnly:
-            button.title = " CPU \(cpuStr)\(shelfSuffix)"
+            button.title = " CPU \(cpuStr)\(statusSuffix)"
         case .ramOnly:
-            button.title = " RAM \(ramStr)\(shelfSuffix)"
+            button.title = " RAM \(ramStr)\(statusSuffix)"
         case .thermals:
-            button.title = " \(tempStr)\(shelfSuffix)"
+            button.title = " \(tempStr)\(statusSuffix)"
         case .battery:
             let chargePrefix = monitor.battery.isCharging ? "⚡️" : ""
-            button.title = " \(chargePrefix)\(batPct) | \(wattStr)\(shelfSuffix)"
+            button.title = " \(chargePrefix)\(batPct) | \(wattStr)\(statusSuffix)"
         case .watts:
-            button.title = " \(wattStr)\(shelfSuffix)"
+            button.title = " \(wattStr)\(statusSuffix)"
         case .network:
-            button.title = " ↓\(dlSpeed) ↑\(ulSpeed)\(shelfSuffix)"
+            button.title = " ↓\(dlSpeed) ↑\(ulSpeed)\(statusSuffix)"
         case .cpuAndRam:
-            button.title = " \(cpuStr) | \(ramStr)\(shelfSuffix)"
+            button.title = " \(cpuStr) | \(ramStr)\(statusSuffix)"
         case .cpuAndTemp:
-            button.title = " \(cpuStr) | \(tempStr)\(shelfSuffix)"
+            button.title = " \(cpuStr) | \(tempStr)\(statusSuffix)"
         case .ramAndTemp:
-            button.title = " \(ramStr) | \(tempStr)\(shelfSuffix)"
+            button.title = " \(ramStr) | \(tempStr)\(statusSuffix)"
         case .cpuRamTemp:
-            button.title = " \(cpuStr) | \(ramStr) | \(tempStr)\(shelfSuffix)"
+            button.title = " \(cpuStr) | \(ramStr) | \(tempStr)\(statusSuffix)"
         case .netAndCpu:
-            button.title = " ↓\(dlSpeed) | \(cpuStr)\(shelfSuffix)"
+            button.title = " ↓\(dlSpeed) | \(cpuStr)\(statusSuffix)"
         }
         
         button.toolTip = L10n.tr(
@@ -272,18 +275,27 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
             })
         )
         
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: panel,
+            queue: .main
+        ) { [weak self] _ in
+            self?.floatingShelfPanel = nil
+        }
+        
         self.floatingShelfPanel = panel
         panel.makeKeyAndOrderFront(nil)
         SoundManager.shared.play(.action)
     }
     
     public func closeDetachedShelf() {
+        floatingShelfPanel?.orderOut(nil)
         floatingShelfPanel?.close()
         floatingShelfPanel = nil
     }
     
     public var isShelfDetached: Bool {
-        return floatingShelfPanel != nil
+        return floatingShelfPanel?.isVisible == true
     }
     
     public func toggleDetachedShelf() {
@@ -329,18 +341,27 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
             })
         )
         
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: panel,
+            queue: .main
+        ) { [weak self] _ in
+            self?.floatingNotesPanel = nil
+        }
+        
         self.floatingNotesPanel = panel
         panel.makeKeyAndOrderFront(nil)
         SoundManager.shared.play(.action)
     }
     
     public func closeDetachedNotes() {
+        floatingNotesPanel?.orderOut(nil)
         floatingNotesPanel?.close()
         floatingNotesPanel = nil
     }
     
     public var isNotesDetached: Bool {
-        return floatingNotesPanel != nil
+        return floatingNotesPanel?.isVisible == true
     }
     
     public func toggleDetachedNotes() {
@@ -371,11 +392,13 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         let shelfCount = DropShelfEngine.shared.items.count
         let shelfTitle = shelfCount > 0 ? L10n.tr("🏝️ Open File Shelf (\(shelfCount) Files)", "🏝️ Dosya Rafını Aç (\(shelfCount) Dosya)") : L10n.tr("🏝️ Open File Shelf", "🏝️ Dosya Rafını Aç")
         let shelfItem = NSMenuItem(title: shelfTitle, action: #selector(toggleShelfFromMenu), keyEquivalent: "d")
+        shelfItem.keyEquivalentModifierMask = [.option]
         shelfItem.target = self
         menu.addItem(shelfItem)
         
         let notesTitle = isNotesDetached ? L10n.tr("📝 Close Floating Notes", "📝 Yüzen Notları Kapat") : L10n.tr("📝 Open Floating Notes Window", "📝 Yüzen Notlar Penceresini Aç")
         let notesItem = NSMenuItem(title: notesTitle, action: #selector(toggleNotesFromMenu), keyEquivalent: "n")
+        notesItem.keyEquivalentModifierMask = [.option]
         notesItem.target = self
         menu.addItem(notesItem)
         
@@ -389,6 +412,7 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         let clipCount = clipItems.count
         let clipTitle = clipCount > 0 ? L10n.tr("📋 Clipboard History (\(clipCount) Items)", "📋 Pano Geçmişi (\(clipCount) Öğe)") : L10n.tr("📋 Clipboard History", "📋 Pano Geçmişi")
         let clipMenuItem = NSMenuItem(title: clipTitle, action: #selector(openClipboardFromMenu), keyEquivalent: "v")
+        clipMenuItem.keyEquivalentModifierMask = [.option]
         clipMenuItem.target = self
         
         let clipSubmenu = NSMenu()
@@ -442,10 +466,12 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         menu.addItem(clipMenuItem)
         
         let ocrItem = NSMenuItem(title: L10n.tr("🔍 Screen Text Capture (OCR)", "🔍 Ekrandan Metin Kopyala (OCR)"), action: #selector(triggerOCRFromMenu), keyEquivalent: "o")
+        ocrItem.keyEquivalentModifierMask = [.option]
         ocrItem.target = self
         menu.addItem(ocrItem)
         
         let colorItem = NSMenuItem(title: L10n.tr("🎨 Color Eyedropper (Pipette)", "🎨 Ekrandan Renk Seç (Damlalık)"), action: #selector(triggerColorPickerFromMenu), keyEquivalent: "p")
+        colorItem.keyEquivalentModifierMask = [.option]
         colorItem.target = self
         menu.addItem(colorItem)
         
@@ -457,18 +483,27 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         let isMuted = AudioMuteEngine.shared.isMuted
         let micTitle = isMuted ? L10n.tr("🎙️ Unmute Microphone", "🎙️ Mikrofonun Sesini Aç") : L10n.tr("🔇 Mute Microphone (Global Mute)", "🔇 Mikrofonu Sustur (Global Mute)")
         let micItem = NSMenuItem(title: micTitle, action: #selector(toggleMicFromMenu), keyEquivalent: "m")
+        micItem.keyEquivalentModifierMask = [.option]
         micItem.target = self
         menu.addItem(micItem)
         
         let awakeStatus = KeepAwakeEngine.shared.isActive ? L10n.tr("Active (Disable)", "Açık (Kapat)") : L10n.tr("Inactive (Enable)", "Kapalı (Aç)")
         let awakeItem = NSMenuItem(title: L10n.tr("☕ Keep Awake: \(awakeStatus)", "☕ Caffeine (Uyanık Tut): \(awakeStatus)"), action: #selector(toggleKeepAwake), keyEquivalent: "c")
+        awakeItem.keyEquivalentModifierMask = [.option]
         awakeItem.target = self
         menu.addItem(awakeItem)
         
         let clamshellEngine = KeepAwakeEngine.shared
-        let clamshellStatus = clamshellEngine.isClamshellEnabled
-            ? (clamshellEngine.isClamshellActive ? L10n.tr("Active (AC Connected)", "Açık (Şarjda)") : L10n.tr("Standby (Connect AC)", "Beklemede (Şarj Tak)"))
-            : L10n.tr("Disabled (Enable)", "Kapalı (Aç)")
+        let clamshellStatus: String
+        if clamshellEngine.isClamshellAuthRequired {
+            clamshellStatus = L10n.tr("⚠️ Authorization Required (Click to Grant)", "⚠️ Yetki Gerekli (İzin Vermek İçin Tıkla)")
+        } else if clamshellEngine.isClamshellEnabled {
+            clamshellStatus = clamshellEngine.isClamshellActive
+                ? L10n.tr("Active (AC Connected)", "Açık (Şarjda)")
+                : L10n.tr("Standby (Connect AC)", "Beklemede (Şarj Tak)")
+        } else {
+            clamshellStatus = L10n.tr("Disabled (Enable)", "Kapalı (Aç)")
+        }
         let clamshellItem = NSMenuItem(title: L10n.tr("💻 Clamshell (Lid-Closed): \(clamshellStatus)", "💻 Kapak Kapalı (Clamshell): \(clamshellStatus)"), action: #selector(toggleClamshellFromMenu), keyEquivalent: "")
         clamshellItem.target = self
         menu.addItem(clamshellItem)
@@ -476,6 +511,7 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         let isDesktopHidden = DesktopFocusEngine.shared.isDesktopHidden
         let desktopTitle = isDesktopHidden ? L10n.tr("🖥️ Show Desktop Icons", "🖥️ Masaüstü Simgelerini Göster") : L10n.tr("🖥️ Hide Desktop Icons (Focus)", "🖥️ Masaüstü Simgelerini Gizle (Odak)")
         let desktopItem = NSMenuItem(title: desktopTitle, action: #selector(toggleDesktopIconsFromMenu), keyEquivalent: "h")
+        desktopItem.keyEquivalentModifierMask = [.option]
         desktopItem.target = self
         menu.addItem(desktopItem)
         
@@ -483,6 +519,26 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         let loginItem = NSMenuItem(title: L10n.tr("🚀 Launch at Login: \(loginStatus)", "🚀 Girişte Otomatik Başlat: \(loginStatus)"), action: #selector(toggleLaunchAtLogin), keyEquivalent: "l")
         loginItem.target = self
         menu.addItem(loginItem)
+        
+        // Mounted External Drives & DMGs
+        let ejectable = VolumeManager.shared.ejectableVolumes
+        if !ejectable.isEmpty {
+            menu.addItem(NSMenuItem.separator())
+            for vol in ejectable {
+                let icon = (vol.url.pathExtension.lowercased() == "dmg" || vol.name.contains(".dmg")) ? "💿" : "⏏️"
+                let ejectTitle = "\(icon) \(L10n.tr("Eject", "Çıkar")): \(vol.name)"
+                let volItem = NSMenuItem(title: ejectTitle, action: #selector(ejectVolumeFromMenu(_:)), keyEquivalent: "")
+                volItem.target = self
+                volItem.representedObject = vol
+                menu.addItem(volItem)
+            }
+            if ejectable.count > 1 {
+                let allTitle = "⏏️ \(L10n.tr("Eject All Mounted Drives", "Tüm Sürücüleri Çıkar")) (\(ejectable.count))"
+                let allItem = NSMenuItem(title: allTitle, action: #selector(ejectAllVolumesFromMenu), keyEquivalent: "")
+                allItem.target = self
+                menu.addItem(allItem)
+            }
+        }
         
         menu.addItem(NSMenuItem.separator())
         
@@ -522,7 +578,7 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         NotificationCenter.default.post(name: NSNotification.Name("ArkenSelectTab"), object: tab)
     }
     
-    @objc private func openClipboardFromMenu() {
+    @objc public func openClipboardFromMenu() {
         selectTab(.clipboard)
     }
     
@@ -586,6 +642,15 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
     @objc private func refreshNow() {
         monitor.updateAll()
         updateButtonContent()
+    }
+    
+    @objc private func ejectVolumeFromMenu(_ sender: NSMenuItem) {
+        guard let vol = sender.representedObject as? MountedVolumeItem else { return }
+        VolumeManager.shared.eject(volume: vol)
+    }
+    
+    @objc private func ejectAllVolumesFromMenu() {
+        VolumeManager.shared.ejectAll()
     }
     
     @objc private func quitApp() {

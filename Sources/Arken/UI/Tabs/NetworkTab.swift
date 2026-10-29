@@ -4,6 +4,7 @@ public struct NetworkTab: View {
     @ObservedObject var monitor: HardwareMonitor
     @ObservedObject var l10n = LocalizationManager.shared
     @ObservedObject var dns = DNSManagerEngine.shared
+    @State private var copiedIP: Bool = false
     
     public init(monitor: HardwareMonitor) {
         self.monitor = monitor
@@ -86,8 +87,26 @@ public struct NetworkTab: View {
                             Text(L10n.tr("Local IP Address:", "Yerel IP Adresi:"))
                                 .font(.system(size: 9))
                                 .foregroundColor(.secondary)
-                            Text(monitor.network.ipAddress)
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            HStack(spacing: 4) {
+                                Text(copiedIP ? L10n.tr("Copied!", "Kopyalandı!") : monitor.network.ipAddress)
+                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .foregroundColor(copiedIP ? .green : .primary)
+                                Image(systemName: copiedIP ? "checkmark" : "doc.on.doc")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(copiedIP ? .green : .secondary.opacity(0.6))
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                let pboard = NSPasteboard.general
+                                pboard.clearContents()
+                                pboard.setString(monitor.network.ipAddress, forType: .string)
+                                SoundManager.shared.play(.pop)
+                                withAnimation { copiedIP = true }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    withAnimation { copiedIP = false }
+                                }
+                            }
+                            .help(L10n.tr("Click to copy IP", "IP adresini kopyalamak için tıklayın"))
                         }
                     }
                 }

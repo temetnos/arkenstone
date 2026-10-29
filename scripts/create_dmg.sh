@@ -9,9 +9,9 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 APP_NAME="ArkenStone"
 APP_BUNDLE="${PROJECT_ROOT}/${APP_NAME}.app"
 if [ -f "${APP_BUNDLE}/Contents/Info.plist" ]; then
-    VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${APP_BUNDLE}/Contents/Info.plist" 2>/dev/null || echo "0.8.5")
+    VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${APP_BUNDLE}/Contents/Info.plist" 2>/dev/null || echo "0.8.6")
 else
-    VERSION="0.8.5"
+    VERSION="0.8.6"
 fi
 DMG_NAME="${APP_NAME}-v${VERSION}.dmg"
 DMG_OUTPUT="${PROJECT_ROOT}/${DMG_NAME}"
@@ -37,7 +37,43 @@ cp -R "${APP_BUNDLE}" "${STAGING_DIR}/${APP_NAME}.app"
 echo "🔗 Creating Applications symlink..."
 ln -s /Applications "${STAGING_DIR}/Applications"
 
-# 5. Copy README / License / Volume icon if available
+# 5. Create Gatekeeper helper note & copy License / Volume icon if available
+cat << 'EOF' > "${STAGING_DIR}/HOW_TO_OPEN.txt"
+============================================================
+              ArkenStone - Quick Start Guide
+============================================================
+
+Thank you for downloading ArkenStone!
+
+1. Installation:
+   • Drag "ArkenStone.app" into the "Applications" shortcut.
+
+2. First Launch on macOS (Gatekeeper Notice):
+   Since ArkenStone is distributed outside the Mac App Store,
+   macOS may show a security notice upon first open.
+
+   To open it the first time:
+   • Right-click (or Control-click) ArkenStone in Applications.
+   • Click "Open" from the context menu.
+   • Click "Open" in the system confirmation prompt.
+
+   (You only need to do this once. Subsequent launches will
+   open instantly from Spotlight, Launchpad, or login!)
+
+3. Global Keyboard Shortcuts:
+   • ⌥ Space : Toggle Main Popover
+   • ⌥ D     : Floating File Shelf
+   • ⌥ N     : Floating Quick Notes
+   • ⌥ V     : Clipboard History Menu
+   • ⌥ C     : Keep Awake (Caffeine)
+   • ⌥ M     : Global Microphone Mute
+   • ⌥ H     : Toggle Desktop Icons (Focus)
+   • ⌥ K     : Clean Lock (Keyboard & Screen)
+
+Enjoy your pure, native, and ultra-lightweight macOS power tool!
+============================================================
+EOF
+
 if [ -f "${PROJECT_ROOT}/LICENSE" ]; then
     cp "${PROJECT_ROOT}/LICENSE" "${STAGING_DIR}/LICENSE.txt"
 fi

@@ -166,10 +166,21 @@ public struct DedicatedNotesView: View {
     private func exportNotes() {
         guard !scratchpad.content.isEmpty else { return }
         let desktopURL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first ?? URL(fileURLWithPath: NSHomeDirectory() + "/Desktop")
-        let fileURL = desktopURL.appendingPathComponent("Arken_Notes.txt")
+        let defaultURL = desktopURL.appendingPathComponent("Arken_Notes.txt")
+        
+        let targetURL: URL
+        if FileManager.default.fileExists(atPath: defaultURL.path) {
+            let df = DateFormatter()
+            df.dateFormat = "yyyy-MM-dd_HHmm"
+            let dateStr = df.string(from: Date())
+            targetURL = desktopURL.appendingPathComponent("Arken_Notes_\(dateStr).txt")
+        } else {
+            targetURL = defaultURL
+        }
+        
         do {
-            try scratchpad.content.write(to: fileURL, atomically: true, encoding: .utf8)
-            NSWorkspace.shared.activateFileViewerSelecting([fileURL])
+            try scratchpad.content.write(to: targetURL, atomically: true, encoding: .utf8)
+            NSWorkspace.shared.activateFileViewerSelecting([targetURL])
             SoundManager.shared.play(.success)
         } catch {
             print("Failed to export notes: \(error)")

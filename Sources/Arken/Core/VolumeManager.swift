@@ -13,6 +13,7 @@ public class VolumeManager: ObservableObject {
     public static let shared = VolumeManager()
     
     @Published public var ejectableVolumes: [MountedVolumeItem] = []
+    @Published public var lastErrorMessage: String? = nil
     
     public init() {
         refresh()
@@ -48,18 +49,37 @@ public class VolumeManager: ObservableObject {
     }
     
     public func eject(volume: MountedVolumeItem) {
-        try? NSWorkspace.shared.unmountAndEjectDevice(at: volume.url)
-        SoundManager.shared.play(.pop)
+        do {
+            try NSWorkspace.shared.unmountAndEjectDevice(at: volume.url)
+            self.lastErrorMessage = nil
+            SoundManager.shared.play(.pop)
+        } catch {
+            self.lastErrorMessage = error.localizedDescription
+            SoundManager.shared.play(.warning)
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.refresh()
         }
     }
     
     public func ejectAll() {
+        var firstError: Error? = nil
         for v in ejectableVolumes {
-            try? NSWorkspace.shared.unmountAndEjectDevice(at: v.url)
+            do {
+                try NSWorkspace.shared.unmountAndEjectDevice(at: v.url)
+            } catch {
+                if firstError == nil {
+                    firstError = error
+                }
+            }
         }
-        SoundManager.shared.play(.pop)
+        if let err = firstError {
+            self.lastErrorMessage = err.localizedDescription
+            SoundManager.shared.play(.warning)
+        } else {
+            self.lastErrorMessage = nil
+            SoundManager.shared.play(.pop)
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.refresh()
         }

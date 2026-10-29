@@ -71,14 +71,27 @@ public class GlobalHotKeyEngine {
     public func registerDefaults() {
         let opt = UInt32(optionKey)
         
+        // ⌥Space & ⌥A -> Toggle Main Menu Bar Control Center
+        register(keyCode: UInt32(kVK_Space), modifiers: opt) {
+            StatusBarController.shared?.toggleMainPopover()
+        }
+        register(keyCode: UInt32(kVK_ANSI_A), modifiers: opt) {
+            StatusBarController.shared?.toggleMainPopover()
+        }
+        
+        // ⌥C -> Caffeine / Keep Awake Toggle
+        register(keyCode: UInt32(kVK_ANSI_C), modifiers: opt) {
+            KeepAwakeEngine.shared.toggle()
+        }
+        
+        // ⌥P -> Screen Eyedropper / Color Picker (Pipette)
+        register(keyCode: UInt32(kVK_ANSI_P), modifiers: opt) {
+            StatusBarController.shared?.triggerColorPickerFromMenu()
+        }
+        
         // ⌥O -> Screen OCR Text Grabber
         register(keyCode: UInt32(kVK_ANSI_O), modifiers: opt) {
             StatusBarController.shared?.triggerOCRFromMenu()
-        }
-        
-        // ⌥C -> Screen Eyedropper / Color Picker
-        register(keyCode: UInt32(kVK_ANSI_C), modifiers: opt) {
-            StatusBarController.shared?.triggerColorPickerFromMenu()
         }
         
         // ⌥M -> Global Microphone Killswitch
@@ -91,9 +104,19 @@ public class GlobalHotKeyEngine {
             StatusBarController.shared?.toggleDetachedShelf()
         }
         
-        // ⌥A -> Toggle Main Menu Bar Control Center
-        register(keyCode: UInt32(kVK_ANSI_A), modifiers: opt) {
-            StatusBarController.shared?.toggleMainPopover()
+        // ⌥N -> Detachable Quick Notes Window
+        register(keyCode: UInt32(kVK_ANSI_N), modifiers: opt) {
+            StatusBarController.shared?.toggleDetachedNotes()
+        }
+        
+        // ⌥H -> Toggle Desktop Icons (Focus Mode)
+        register(keyCode: UInt32(kVK_ANSI_H), modifiers: opt) {
+            DesktopFocusEngine.shared.toggleDesktopIcons()
+        }
+        
+        // ⌥V -> Quick Clipboard History Menu
+        register(keyCode: UInt32(kVK_ANSI_V), modifiers: opt) {
+            StatusBarController.shared?.openClipboardFromMenu()
         }
         
         // ⌥K -> Keyboard & Screen Cleaning Lock

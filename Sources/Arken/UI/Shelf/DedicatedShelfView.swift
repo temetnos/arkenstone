@@ -294,6 +294,7 @@ struct DedicatedShelfItemCard: View {
             if item.isApplication {
                 ShelfCleanButton {
                     DiskCleanerEngine.shared.scanApp(url: item.url)
+                    StatusBarController.shared?.closeDetachedShelf()
                     StatusBarController.shared?.closeShelfPopover()
                     StatusBarController.shared?.selectTab(.cleaner)
                     NotificationCenter.default.post(name: NSNotification.Name("ArkenSelectTab"), object: ArkenTab.cleaner)
@@ -318,8 +319,10 @@ struct DedicatedShelfItemCard: View {
             if item.isApplication {
                 Button(action: {
                     DiskCleanerEngine.shared.scanApp(url: item.url)
+                    StatusBarController.shared?.closeDetachedShelf()
                     StatusBarController.shared?.closeShelfPopover()
                     StatusBarController.shared?.selectTab(.cleaner)
+                    NotificationCenter.default.post(name: NSNotification.Name("ArkenSelectTab"), object: ArkenTab.cleaner)
                 }) {
                     Text(L10n.tr("🧹 Clean App Leftovers...", "🧹 Uygulama Kalıntılarını Temizle..."))
                 }

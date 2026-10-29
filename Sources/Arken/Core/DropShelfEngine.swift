@@ -19,8 +19,13 @@ public struct ShelvedItem: Identifiable, Equatable {
         var isDir: ObjCBool = false
         FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
         self.isDirectory = isDir.boolValue
+        let isApp = url.pathExtension.lowercased() == "app"
         
-        if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+        if isApp {
+            self.sizeFormatted = L10n.tr("App", "Uygulama")
+        } else if isDir.boolValue {
+            self.sizeFormatted = L10n.tr("Folder", "Klasör")
+        } else if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
            let size = attrs[.size] as? UInt64 {
             let mb = Double(size) / (1024 * 1024)
             if mb > 1024 {
@@ -32,7 +37,7 @@ public struct ShelvedItem: Identifiable, Equatable {
                 self.sizeFormatted = String(format: "%.0f KB", kb)
             }
         } else {
-            self.sizeFormatted = isDir.boolValue ? L10n.tr("Folder", "Klasör") : "-"
+            self.sizeFormatted = "-"
         }
     }
     

@@ -12,7 +12,8 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "ArkenStone",
-            path: "Sources/Arken"
+            path: "Sources/Arken",
+            exclude: ["Helper"]
         ),
     ]
 )

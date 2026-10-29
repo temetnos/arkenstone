@@ -454,7 +454,8 @@ public class DiskCleanerEngine: ObservableObject {
             
             let genericTokens: Set<String> = [
                 "com", "org", "net", "app", "mac", "client", "desktop", "helper",
-                "system", "apple", "google", "microsoft"
+                "system", "apple", "google", "microsoft", "code", "note", "mail",
+                "studio", "pro", "air", "soft", "data", "cloud", "tool"
             ]
             
             let bundleParts = resolvedBundleId.components(separatedBy: ".")
@@ -584,7 +585,7 @@ public class DiskCleanerEngine: ObservableObject {
                     if low.hasSuffix("." + token) || low.hasSuffix("-" + token) || low.hasSuffix("_" + token) {
                         return true
                     }
-                    if token.count >= 4 && low.contains(token) {
+                    if token.count >= 6 && low.contains(token) {
                         return true
                     }
                 }

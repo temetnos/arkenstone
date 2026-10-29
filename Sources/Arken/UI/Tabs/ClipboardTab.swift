@@ -156,163 +156,205 @@ struct ClipboardRowView: View {
     let item: ClipboardItem
     @ObservedObject var clipboard = ClipboardEngine.shared
     @State private var isHovered = false
+    @State private var showCopiedBadge = false
     
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
-            // Pin & Type Icon
-            VStack(spacing: 4) {
-                if item.isPinned {
-                    Image(systemName: "pin.fill")
-                        .font(.system(size: 9))
-                        .foregroundColor(ArkenTheme.tempColor)
-                } else {
-                    Image(systemName: item.type.icon)
-                        .font(.system(size: 9))
+            iconColumn
+            contentPreview
+            Spacer()
+            actionButtons
+        }
+        .padding(8)
+        .background(rowBackground)
+        .overlay(rowOverlay)
+        .contentShape(Rectangle())
+        .onHover { h in isHovered = h }
+        .onTapGesture {
+            triggerCopy()
+        }
+    }
+    
+    private var rowBackground: some View {
+        RoundedRectangle(cornerRadius: 8)
+            .fill(item.isPinned ? Color.white.opacity(0.08) : (isHovered ? Color.white.opacity(0.06) : Color.white.opacity(0.02)))
+    }
+    
+    private var rowOverlay: some View {
+        RoundedRectangle(cornerRadius: 8)
+            .stroke(item.isPinned ? ArkenTheme.tempColor.opacity(0.3) : Color.white.opacity(0.06), lineWidth: 0.8)
+    }
+    
+    private func triggerCopy() {
+        clipboard.copyToSystem(item: item)
+        withAnimation(.easeInOut(duration: 0.15)) {
+            showCopiedBadge = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                showCopiedBadge = false
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var iconColumn: some View {
+        VStack(spacing: 4) {
+            if item.isPinned {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 9))
+                    .foregroundColor(ArkenTheme.tempColor)
+            } else {
+                Image(systemName: item.type.icon)
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary)
+            }
+            
+            // Color swatch if color
+            if item.type == .color {
+                Circle()
+                    .fill(Color(hex: item.content) ?? Color.clear)
+                    .frame(width: 10, height: 10)
+                    .overlay(Circle().stroke(Color.white.opacity(0.3), lineWidth: 0.5))
+            }
+        }
+        .frame(width: 14)
+        .padding(.top, 2)
+    }
+    
+    @ViewBuilder
+    private var contentPreview: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if item.type == .image, let data = item.imageData, let nsImg = NSImage(data: data) {
+                Image(nsImage: nsImg)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: .infinity, maxHeight: 95, alignment: .leading)
+                    .cornerRadius(6)
+                    .background(Color.black.opacity(0.18))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
+                    )
+                
+                HStack(spacing: 6) {
+                    Text(item.preview)
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    Spacer()
+                    Text(timeAgo(item.copiedAt))
+                        .font(.system(size: 8))
                         .foregroundColor(.secondary)
                 }
+            } else {
+                Text(item.preview)
+                    .font(item.type == .code ? .system(size: 10, design: .monospaced) : .system(size: 10))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
                 
-                // Color swatch if color
-                if item.type == .color {
-                    Circle()
-                        .fill(Color(hex: item.content) ?? Color.clear)
-                        .frame(width: 10, height: 10)
-                        .overlay(Circle().stroke(Color.white.opacity(0.3), lineWidth: 0.5))
+                HStack(spacing: 6) {
+                    Text(LocalizationManager.shared.language == .tr ? "\(item.characterCount) krk" : "\(item.characterCount) chars")
+                        .font(.system(size: 8))
+                        .foregroundColor(.secondary)
+                    Text("•")
+                        .font(.system(size: 8))
+                        .foregroundColor(.secondary)
+                    Text(timeAgo(item.copiedAt))
+                        .font(.system(size: 8))
+                        .foregroundColor(.secondary)
                 }
             }
-            .frame(width: 14)
-            .padding(.top, 2)
-            
-            // Content Preview
-            VStack(alignment: .leading, spacing: 4) {
-                if item.type == .image, let data = item.imageData, let nsImg = NSImage(data: data) {
-                    Image(nsImage: nsImg)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: .infinity, maxHeight: 95, alignment: .leading)
-                        .cornerRadius(6)
-                        .background(Color.black.opacity(0.18))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.white.opacity(0.1), lineWidth: 0.5)
-                        )
-                    
-                    HStack(spacing: 6) {
-                        Text(item.preview)
-                            .font(.system(size: 9, weight: .medium, design: .monospaced))
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                        Spacer()
-                        Text(timeAgo(item.copiedAt))
-                            .font(.system(size: 8))
-                            .foregroundColor(.secondary)
-                    }
-                } else {
-                    Text(item.preview)
-                        .font(item.type == .code ? .system(size: 10, design: .monospaced) : .system(size: 10))
-                        .foregroundColor(.primary)
-                        .lineLimit(2)
-                    
-                    HStack(spacing: 6) {
-                        Text(LocalizationManager.shared.language == .tr ? "\(item.characterCount) krk" : "\(item.characterCount) chars")
-                            .font(.system(size: 8))
-                            .foregroundColor(.secondary)
-                        Text("•")
-                            .font(.system(size: 8))
-                            .foregroundColor(.secondary)
-                        Text(timeAgo(item.copiedAt))
-                            .font(.system(size: 8))
-                            .foregroundColor(.secondary)
-                    }
+        }
+    }
+    
+    @ViewBuilder
+    private var actionButtons: some View {
+        HStack(spacing: 4) {
+            // Pin button
+            Button(action: {
+                withAnimation {
+                    clipboard.togglePin(id: item.id)
                 }
+            }) {
+                Image(systemName: item.isPinned ? "pin.slash.fill" : "pin")
+                    .font(.system(size: 10))
+                    .foregroundColor(item.isPinned ? ArkenTheme.tempColor : .secondary)
             }
+            .buttonStyle(PlainButtonStyle())
+            .help(item.isPinned ? L10n.tr("Unpin", "Sabitlemeyi Kaldır") : L10n.tr("Pin to Top", "Başa Sabitle"))
             
-            Spacer()
-            
-            // Action Buttons
-            HStack(spacing: 4) {
-                // Pin button
+            // If image: Send to File Shelf button
+            if item.type == .image {
                 Button(action: {
-                    withAnimation {
-                        clipboard.togglePin(id: item.id)
-                    }
+                    clipboard.sendImageToShelf(item: item)
                 }) {
-                    Image(systemName: item.isPinned ? "pin.slash.fill" : "pin")
-                        .font(.system(size: 10))
-                        .foregroundColor(item.isPinned ? ArkenTheme.tempColor : .secondary)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .help(item.isPinned ? L10n.tr("Unpin", "Sabitlemeyi Kaldır") : L10n.tr("Pin to Top", "Başa Sabitle"))
-                
-                // If image: Send to File Shelf button
-                if item.type == .image {
-                    Button(action: {
-                        clipboard.sendImageToShelf(item: item)
-                    }) {
-                        Image(systemName: "hand.draw.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(ArkenTheme.accentColor)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .help(L10n.tr("Send Image to File Shelf", "Görseli Dosya Rafına Gönder"))
-                }
-                
-                // Copy button
-                Button(action: {
-                    clipboard.copyToSystem(item: item)
-                }) {
-                    Image(systemName: "doc.on.doc.fill")
+                    Image(systemName: "hand.draw.fill")
                         .font(.system(size: 10))
                         .foregroundColor(ArkenTheme.accentColor)
                 }
                 .buttonStyle(PlainButtonStyle())
-                .help(L10n.tr("Copy to Clipboard", "Panoya Kopyala"))
-                
-                // Text Transforms (JSON, Base64, URL, Trim)
-                if item.type != .image {
-                    Menu {
-                        ForEach(TextTransform.allCases) { transform in
-                            Button(transform.title) {
-                                clipboard.transformAndCopy(item: item, transform: transform)
-                            }
-                        }
-                    } label: {
-                        Image(systemName: "wand.and.stars")
-                            .font(.system(size: 10))
-                            .foregroundColor(ArkenTheme.accentColor.opacity(0.85))
-                    }
-                    .menuStyle(BorderlessButtonMenuStyle())
-                    .frame(width: 14)
-                    .help(L10n.tr("Transform & Copy (JSON, Base64, URL, Plain Text)", "Dönüştür ve Kopyala (JSON, Base64, URL, Düz Metin)"))
-                }
-                
-                // Delete button
-                if isHovered {
-                    Button(action: {
-                        withAnimation {
-                            clipboard.deleteItem(id: item.id)
-                        }
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(.red)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .help(L10n.tr("Delete", "Sil"))
-                }
+                .help(L10n.tr("Send Image to File Shelf", "Görseli Dosya Rafına Gönder"))
             }
-        }
-        .padding(8)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(item.isPinned ? Color.white.opacity(0.08) : (isHovered ? Color.white.opacity(0.06) : Color.white.opacity(0.02)))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(item.isPinned ? ArkenTheme.tempColor.opacity(0.3) : Color.white.opacity(0.06), lineWidth: 0.8)
-        )
-        .onHover { h in isHovered = h }
-        .onTapGesture(count: 2) {
-            clipboard.copyToSystem(item: item)
+            
+            // Copied confirmation badge
+            if showCopiedBadge {
+                HStack(spacing: 3) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 8, weight: .bold))
+                    Text(L10n.tr("Copied!", "Kopyalandı!"))
+                        .font(.system(size: 8.5, weight: .bold))
+                }
+                .foregroundColor(.green)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(Color.green.opacity(0.18))
+                .clipShape(Capsule())
+            }
+            
+            // Copy button
+            Button(action: {
+                triggerCopy()
+            }) {
+                Image(systemName: "doc.on.doc.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(ArkenTheme.accentColor)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .help(L10n.tr("Copy to Clipboard", "Panoya Kopyala"))
+            
+            // Text Transforms (JSON, Base64, URL, Trim)
+            if item.type != .image {
+                Menu {
+                    ForEach(TextTransform.allCases) { transform in
+                        Button(transform.title) {
+                            clipboard.transformAndCopy(item: item, transform: transform)
+                        }
+                    }
+                } label: {
+                    Image(systemName: "wand.and.stars")
+                        .font(.system(size: 10))
+                        .foregroundColor(ArkenTheme.accentColor.opacity(0.85))
+                }
+                .menuStyle(BorderlessButtonMenuStyle())
+                .frame(width: 14)
+                .help(L10n.tr("Transform & Copy (JSON, Base64, URL, Plain Text)", "Dönüştür ve Kopyala (JSON, Base64, URL, Düz Metin)"))
+            }
+            
+            // Delete button
+            if isHovered {
+                Button(action: {
+                    withAnimation {
+                        clipboard.deleteItem(id: item.id)
+                    }
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.red)
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help(L10n.tr("Delete", "Sil"))
+            }
         }
     }
     

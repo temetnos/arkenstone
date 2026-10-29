@@ -460,11 +460,15 @@ public struct SettingsTab: View {
                     }
                     
                     VStack(spacing: 4) {
+                        shortcutRow(key: "⌥ Space / ⌥ A", title: L10n.tr("Control Center / Menu Bar Window", "Ana Kontrol Merkezi Penceresi"))
+                        shortcutRow(key: "⌥ C", title: L10n.tr("Keep Awake (Caffeine Toggle)", "Uyanık Tut (Caffeine)"))
+                        shortcutRow(key: "⌥ P", title: L10n.tr("Color Eyedropper / Pipette", "Ekrandan Renk Seçici (Damlalık)"))
                         shortcutRow(key: "⌥ O", title: L10n.tr("Screen OCR & QR Code Scanner", "Ekran OCR & QR Kod Okuyucu"))
-                        shortcutRow(key: "⌥ C", title: L10n.tr("Color Eyedropper / Pipette", "Ekrandan Renk Seçici (Damlalık)"))
                         shortcutRow(key: "⌥ M", title: L10n.tr("Global Microphone Mute Toggle", "Global Mikrofon Susturma"))
                         shortcutRow(key: "⌥ D", title: L10n.tr("Detached Floating Drop Shelf", "Ayrılabilir Yüzen Dosya Rafı"))
-                        shortcutRow(key: "⌥ A", title: L10n.tr("Toggle ArkenStone Menu Bar Window", "ArkenStone Menü Çubuğu Penceresi"))
+                        shortcutRow(key: "⌥ N", title: L10n.tr("Detached Floating Quick Notes", "Ayrılabilir Yüzen Hızlı Notlar"))
+                        shortcutRow(key: "⌥ H", title: L10n.tr("Toggle Desktop Icons (Focus Mode)", "Masaüstü Simgelerini Gizle (Odak)"))
+                        shortcutRow(key: "⌥ V", title: L10n.tr("Quick Clipboard History Menu", "Hızlı Pano Geçmişi Menüsü"))
                         shortcutRow(key: "⌥ K", title: L10n.tr("Screen & Keyboard Cleaning Lock", "Ekran & Klavye Temizlik Kilidi"))
                         shortcutRow(key: "⌘1..9, 0", title: L10n.tr("Quick Switch Popover Tabs", "Pencere İçi Sekme Geçişleri"))
                     }

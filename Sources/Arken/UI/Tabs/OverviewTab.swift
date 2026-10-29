@@ -9,6 +9,9 @@ public struct OverviewTab: View {
     @ObservedObject var l10n = LocalizationManager.shared
     @ObservedObject var desktopFocus = DesktopFocusEngine.shared
     @ObservedObject var volumeManager = VolumeManager.shared
+    @ObservedObject var audioMute = AudioMuteEngine.shared
+    
+    @State private var copiedIP: Bool = false
     
     public var onSelectTab: ((ArkenTab) -> Void)? = nil
     
@@ -124,9 +127,20 @@ public struct OverviewTab: View {
                     .help(L10n.tr("Open Clipboard History tab", "Pano Geçmişi sekmesini aç"))
                 }
                 
-                // Tier 2: Live System Toggles (Keep Awake, Clamshell, Desktop Focus, Power Guard)
+                // Tier 2: Live System Toggles (Keep Awake, Clamshell/Mute, Desktop Focus, Power Guard)
                 HStack(spacing: 5) {
                     // Keep Awake (Caffeine) Toggle Button
+                    let awakeText: String = {
+                        if keepAwake.isActive {
+                            if keepAwake.remainingSeconds > 0 {
+                                let mins = max(1, (keepAwake.remainingSeconds + 59) / 60)
+                                return "\(L10n.tr("Awake", "Uyanık")) (\(mins)m)"
+                            }
+                            return L10n.tr("Awake", "Uyanık")
+                        }
+                        return L10n.tr("Sleep", "Uyku")
+                    }()
+                    
                     Button(action: {
                         keepAwake.toggle()
                         SoundManager.shared.play(.pop)
@@ -135,10 +149,10 @@ public struct OverviewTab: View {
                             Image(systemName: keepAwake.isActive ? "cup.and.saucer.fill" : "cup.and.saucer")
                                 .font(.system(size: 9))
                                 .foregroundColor(keepAwake.isActive ? ArkenTheme.tempColor : .secondary)
-                            Text(keepAwake.isActive ? L10n.tr("Awake", "Uyanık") : L10n.tr("Sleep", "Uyku"))
+                            Text(awakeText)
                                 .font(.system(size: 9, weight: .semibold))
                                 .lineLimit(1)
-                                .minimumScaleFactor(0.8)
+                                .minimumScaleFactor(0.75)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 4.5)
@@ -153,32 +167,36 @@ public struct OverviewTab: View {
                     .buttonStyle(PlainButtonStyle())
                     .help(L10n.tr("Prevent system sleep (Caffeine)", "Sistem uykusunu engelle (Caffeine)"))
                     
-                    // Clamshell Mode (Lid-Closed Awake) Toggle Button
-                    Button(action: {
-                        keepAwake.toggleClamshell()
-                        SoundManager.shared.play(.pop)
-                    }) {
-                        HStack(spacing: 3.5) {
-                            Image(systemName: keepAwake.isClamshellActive ? "macbook.and.ipad" : (keepAwake.isClamshellEnabled ? "exclamationmark.triangle.fill" : "macbook"))
-                                .font(.system(size: 9))
-                                .foregroundColor(keepAwake.isClamshellActive ? .green : (keepAwake.isClamshellEnabled ? .orange : .secondary))
-                            Text(keepAwake.isClamshellActive ? L10n.tr("Lid ON", "Kapak Açık") : (keepAwake.isClamshellEnabled ? L10n.tr("⚡️ Plug In", "⚡️ Şarj Tak") : L10n.tr("Clamshell", "Kapak")))
-                                .font(.system(size: 9, weight: .semibold))
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
+                    if monitor.battery.hasBattery {
+                        // Clamshell Mode (Lid-Closed Awake) Toggle Button
+                        ClamshellButton(keepAwake: keepAwake)
+                    } else {
+                        // Desktop Mac (No lid): Quick Mute Microphone Button
+                        Button(action: {
+                            audioMute.toggleMute()
+                        }) {
+                            HStack(spacing: 3.5) {
+                                Image(systemName: audioMute.isMuted ? "mic.slash.fill" : "mic.fill")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(audioMute.isMuted ? .red : ArkenTheme.accentColor)
+                                Text(audioMute.isMuted ? L10n.tr("Muted", "Sessiz") : L10n.tr("Mic ON", "Mikrofon"))
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 4.5)
+                            .background(audioMute.isMuted ? Color.red.opacity(0.16) : Color.white.opacity(0.05))
+                            .foregroundColor(audioMute.isMuted ? .red : .primary)
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule()
+                                    .stroke(audioMute.isMuted ? Color.red.opacity(0.35) : Color.white.opacity(0.08), lineWidth: 0.5)
+                            )
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 4.5)
-                        .background(keepAwake.isClamshellActive ? Color.green.opacity(0.16) : (keepAwake.isClamshellEnabled ? Color.orange.opacity(0.15) : Color.white.opacity(0.05)))
-                        .foregroundColor(keepAwake.isClamshellActive ? .green : (keepAwake.isClamshellEnabled ? .orange : .primary))
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(keepAwake.isClamshellActive ? Color.green.opacity(0.35) : (keepAwake.isClamshellEnabled ? Color.orange.opacity(0.35) : Color.white.opacity(0.08)), lineWidth: 0.5)
-                        )
+                        .buttonStyle(PlainButtonStyle())
+                        .help(audioMute.isMuted ? L10n.tr("Unmute Microphone (⌥M)", "Mikrofonun Sesini Aç (⌥M)") : L10n.tr("Mute Microphone (⌥M)", "Mikrofonu Sustur (⌥M)"))
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .help(L10n.tr("Clamshell Mode: Keep Mac awake when lid is closed (Requires AC power)", "Kapak Kapalı Modu: Kapak kapatıldığında Mac'i uyanık tut (Şarjda çalışır)"))
                     
                     // Desktop Focus Toggle Button
                     Button(action: {
@@ -310,26 +328,40 @@ public struct OverviewTab: View {
                 .onTapGesture { onSelectTab?(.ram) }
                 .help(L10n.tr("View RAM and memory distribution", "RAM ve bellek dağılımını gör"))
                 
-                // Battery
+                // Battery or Desktop AC Power
                 GlassCard(padding: 10) {
                     VStack(spacing: 6) {
-                        CircularProgress(
-                            value: Double(monitor.battery.percentage),
-                            gradient: ArkenTheme.batteryGradient,
-                            size: 68,
-                            lineWidth: 7,
-                            icon: powerGuard.isBypassActive ? "shield.fill" : (monitor.battery.isCharging ? "bolt.batteryblock.fill" : (monitor.battery.isPluggedIn ? "powerplug.fill" : "battery.100percent")),
-                            label: powerGuard.isBypassActive ? "Bypass" : (monitor.battery.isCharging ? L10n.tr("Charging", "Şarjda") : (monitor.battery.isPluggedIn ? L10n.tr("AC", "Prizde") : L10n.tr("Battery", "Pil")))
-                        )
-                        Text(powerGuard.isBypassActive ? "0.0W (Bypass)" : (monitor.battery.watts > 0.05 ? String(format: "%.1f W", monitor.battery.watts) : "\(monitor.battery.percentage)%"))
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundColor(powerGuard.isBypassActive ? .green : .secondary)
+                        if monitor.battery.hasBattery {
+                            CircularProgress(
+                                value: Double(monitor.battery.percentage),
+                                gradient: ArkenTheme.batteryGradient,
+                                size: 68,
+                                lineWidth: 7,
+                                icon: powerGuard.isBypassActive ? "shield.fill" : (monitor.battery.isCharging ? "bolt.batteryblock.fill" : (monitor.battery.isPluggedIn ? "powerplug.fill" : "battery.100percent")),
+                                label: powerGuard.isBypassActive ? "Bypass" : (monitor.battery.isCharging ? L10n.tr("Charging", "Şarjda") : (monitor.battery.isPluggedIn ? L10n.tr("AC", "Prizde") : L10n.tr("Battery", "Pil")))
+                            )
+                            Text(powerGuard.isBypassActive ? "0.0W (Bypass)" : (monitor.battery.watts > 0.05 ? String(format: "%.1f W", monitor.battery.watts) : "\(monitor.battery.percentage)%"))
+                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                .foregroundColor(powerGuard.isBypassActive ? .green : .secondary)
+                        } else {
+                            CircularProgress(
+                                value: 100.0,
+                                gradient: LinearGradient(colors: [Color.green, Color.teal], startPoint: .topLeading, endPoint: .bottomTrailing),
+                                size: 68,
+                                lineWidth: 7,
+                                icon: "powerplug.fill",
+                                label: L10n.tr("AC Power", "Prizde")
+                            )
+                            Text(L10n.tr("Desktop Mac", "Masaüstü"))
+                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                .foregroundColor(.secondary)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                 }
                 .contentShape(Rectangle())
                 .onTapGesture { onSelectTab?(.battery) }
-                .help(L10n.tr("View battery and charge protection details", "Pil ve şarj koruma detaylarını gör"))
+                .help(monitor.battery.hasBattery ? L10n.tr("View battery and charge protection details", "Pil ve şarj koruma detaylarını gör") : L10n.tr("Connected to AC Power (Desktop Mac)", "Doğrudan Prizden Besleniyor (Masaüstü Mac)"))
             }
             
             // Real-time Graph (CPU & GPU History)
@@ -380,9 +412,29 @@ public struct OverviewTab: View {
                         }
                     }
                     Spacer()
-                    Text(monitor.network.ipAddress)
-                        .font(.system(size: 9, weight: .medium, design: .monospaced))
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 4) {
+                        Text(copiedIP ? L10n.tr("Copied!", "Kopyalandı!") : monitor.network.ipAddress)
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .foregroundColor(copiedIP ? .green : .secondary)
+                        Image(systemName: copiedIP ? "checkmark" : "doc.on.doc")
+                            .font(.system(size: 8))
+                            .foregroundColor(copiedIP ? .green : .secondary.opacity(0.5))
+                    }
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 2)
+                    .background(Color.white.opacity(0.04))
+                    .cornerRadius(4)
+                    .onTapGesture {
+                        let pboard = NSPasteboard.general
+                        pboard.clearContents()
+                        pboard.setString(monitor.network.ipAddress, forType: .string)
+                        SoundManager.shared.play(.pop)
+                        withAnimation { copiedIP = true }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            withAnimation { copiedIP = false }
+                        }
+                    }
+                    .help(L10n.tr("Click to copy IP address", "IP adresini kopyalamak için tıklayın"))
                 }
             }
             .contentShape(Rectangle())
@@ -446,6 +498,20 @@ public struct OverviewTab: View {
                             .background(Color.white.opacity(0.04))
                             .cornerRadius(5)
                         }
+                        
+                        if let errorMsg = volumeManager.lastErrorMessage {
+                            HStack(spacing: 4) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 8.5))
+                                    .foregroundColor(.orange)
+                                Text(errorMsg)
+                                    .font(.system(size: 8))
+                                    .foregroundColor(.orange)
+                                    .lineLimit(2)
+                            }
+                            .padding(.horizontal, 4)
+                            .padding(.top, 2)
+                        }
                     }
                 }
             }
@@ -492,17 +558,17 @@ public struct OverviewTab: View {
                 .onTapGesture { onSelectTab?(.ram) }
                 .help(L10n.tr("View RAM usage details", "RAM kullanım detaylarını gör"))
                 
-                // Power Wattage
+                // Power Wattage / Power Source
                 GlassCard(padding: 8) {
                     HStack(spacing: 6) {
-                        Image(systemName: "bolt.fill")
+                        Image(systemName: monitor.battery.hasBattery ? "bolt.fill" : "powerplug.fill")
                             .font(.system(size: 12))
                             .foregroundColor(ArkenTheme.batteryColor)
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(L10n.tr("Power Draw", "Güç Tüketimi"))
+                            Text(monitor.battery.hasBattery ? L10n.tr("Power Draw", "Güç Tüketimi") : L10n.tr("Power Source", "Güç Kaynağı"))
                                 .font(.system(size: 9))
                                 .foregroundColor(.secondary)
-                            Text(String(format: "%.2f W", monitor.battery.watts))
+                            Text(monitor.battery.hasBattery ? String(format: "%.2f W", monitor.battery.watts) : L10n.tr("AC Connected", "Priz Bağlı"))
                                 .font(.system(size: 11, weight: .semibold))
                         }
                     }
@@ -510,8 +576,106 @@ public struct OverviewTab: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture { onSelectTab?(.battery) }
-                .help(L10n.tr("View power consumption and battery details", "Güç tüketimi ve batarya detaylarını gör"))
+                .help(monitor.battery.hasBattery ? L10n.tr("View power consumption and battery details", "Güç tüketimi ve batarya detaylarını gör") : L10n.tr("Desktop Mac connected to AC power adapter", "Prizden beslenen masaüstü Mac"))
             }
         }
+    }
+}
+
+// MARK: - Dedicated Clamshell Toggle Button
+private struct ClamshellButton: View {
+    @ObservedObject var keepAwake: KeepAwakeEngine
+    
+    private var iconName: String {
+        if keepAwake.isClamshellAuthRequired {
+            return "exclamationmark.shield.fill"
+        } else if keepAwake.isClamshellActive {
+            return "macbook.and.ipad"
+        } else if keepAwake.isClamshellEnabled {
+            return "exclamationmark.triangle.fill"
+        } else {
+            return "macbook"
+        }
+    }
+    
+    private var titleText: String {
+        if keepAwake.isClamshellAuthRequired {
+            return L10n.tr("⚠️ Auth", "⚠️ İzin Ver")
+        } else if keepAwake.isClamshellActive {
+            return L10n.tr("Lid ON", "Kapak Açık")
+        } else if keepAwake.isClamshellEnabled {
+            return L10n.tr("⚡️ Plug In", "⚡️ Şarj Tak")
+        } else {
+            return L10n.tr("Clamshell", "Kapak")
+        }
+    }
+    
+    private var tintColor: Color {
+        if keepAwake.isClamshellAuthRequired {
+            return .orange
+        } else if keepAwake.isClamshellActive {
+            return .green
+        } else if keepAwake.isClamshellEnabled {
+            return .orange
+        } else {
+            return .secondary
+        }
+    }
+    
+    private var backgroundColor: Color {
+        if keepAwake.isClamshellAuthRequired {
+            return Color.orange.opacity(0.18)
+        } else if keepAwake.isClamshellActive {
+            return Color.green.opacity(0.16)
+        } else if keepAwake.isClamshellEnabled {
+            return Color.orange.opacity(0.15)
+        } else {
+            return Color.white.opacity(0.05)
+        }
+    }
+    
+    private var strokeColor: Color {
+        if keepAwake.isClamshellAuthRequired {
+            return Color.orange.opacity(0.45)
+        } else if keepAwake.isClamshellActive {
+            return Color.green.opacity(0.35)
+        } else if keepAwake.isClamshellEnabled {
+            return Color.orange.opacity(0.35)
+        } else {
+            return Color.white.opacity(0.08)
+        }
+    }
+    
+    var body: some View {
+        Button(action: {
+            if keepAwake.isClamshellAuthRequired {
+                keepAwake.retryClamshellAuthorization()
+            } else {
+                keepAwake.toggleClamshell()
+            }
+            SoundManager.shared.play(.pop)
+        }) {
+            HStack(spacing: 3.5) {
+                Image(systemName: iconName)
+                    .font(.system(size: 9))
+                    .foregroundColor(tintColor)
+                Text(titleText)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundColor(keepAwake.isClamshellActive || keepAwake.isClamshellAuthRequired || keepAwake.isClamshellEnabled ? tintColor : .primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 4.5)
+            .background(backgroundColor)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule().stroke(strokeColor, lineWidth: 0.5)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+        .help(keepAwake.isClamshellAuthRequired
+            ? L10n.tr("Administrator authorization required for Clamshell. Click to grant Touch ID / Password permission.", "Kapak modu için yönetici yetkisi gerekiyor. İzin vermek için tıklayın.")
+            : L10n.tr("Clamshell Mode: Keep Mac awake when lid is closed (Requires AC power)", "Kapak Kapalı Modu: Kapak kapatıldığında Mac'i uyanık tut (Şarjda çalışır)"))
     }
 }

@@ -41,6 +41,7 @@ public class KeepAwakeEngine: ObservableObject {
     // Clamshell (Lid-Closed) Sleep Prevention
     @Published public var isClamshellEnabled: Bool = false
     @Published public var isClamshellActive: Bool = false
+    @Published public var isClamshellAuthRequired: Bool = false
     @Published public var isPluggedIn: Bool = false
     
     private var assertionID: IOPMAssertionID = 0
@@ -143,10 +144,22 @@ public class KeepAwakeEngine: ObservableObject {
     
     // MARK: - Clamshell (Lid-Closed) Anti-Sleep Mode
     public func toggleClamshell() {
-        setClamshellEnabled(!isClamshellEnabled)
+        if isClamshellAuthRequired {
+            retryClamshellAuthorization()
+        } else {
+            setClamshellEnabled(!isClamshellEnabled)
+        }
+    }
+    
+    public func retryClamshellAuthorization() {
+        self.isClamshellAuthRequired = false
+        setClamshellEnabled(true)
     }
     
     public func setClamshellEnabled(_ enabled: Bool) {
+        if !enabled {
+            self.isClamshellAuthRequired = false
+        }
         self.isClamshellEnabled = enabled
         UserDefaults.standard.set(enabled, forKey: "ArkenClamshellEnabled")
         updateClamshellState()
@@ -279,8 +292,20 @@ public class KeepAwakeEngine: ObservableObject {
             if let script = NSAppleScript(source: appleScript) {
                 var err: NSDictionary?
                 script.executeAndReturnError(&err)
-                if err == nil {
-                    self.isDisablesleepApplied = enabled
+                DispatchQueue.main.async {
+                    if err == nil {
+                        self.isDisablesleepApplied = enabled
+                        self.isClamshellAuthRequired = false
+                    } else {
+                        // User cancelled or authorization failed:
+                        // Immediately disable clamshell and mark auth required to prevent infinite loops!
+                        self.isDisablesleepApplied = false
+                        self.isClamshellEnabled = false
+                        self.isClamshellActive = false
+                        self.isClamshellAuthRequired = true
+                        UserDefaults.standard.set(false, forKey: "ArkenClamshellEnabled")
+                        self.stopPowerMonitoring()
+                    }
                 }
             }
         }
