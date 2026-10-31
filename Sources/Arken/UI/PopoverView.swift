@@ -63,6 +63,8 @@ public struct PopoverView: View {
     @ObservedObject var l10n = LocalizationManager.shared
     @State private var selectedTab: ArkenTab = .overview
     @State private var keyMonitor: Any? = nil
+    @State private var scrollMonitor: Any? = nil
+    @State private var tabScrollView: NSScrollView? = nil
     
     public init(monitor: HardwareMonitor) {
         self.monitor = monitor
@@ -219,6 +221,9 @@ public struct PopoverView: View {
                         }
                     }
                     .padding(.horizontal, 14)
+                    .background(ScrollViewFinder { sv in
+                        self.tabScrollView = sv
+                    })
                 }
                 .onChange(of: selectedTab) { _, newTab in
                     withAnimation(.easeInOut(duration: 0.2)) {
@@ -310,11 +315,42 @@ public struct PopoverView: View {
                 }
                 return event
             }
+            
+            // Mouse Scroll Wheel Monitor for Tab Bar Horizontal Scrolling
+            scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
+                guard let sv = tabScrollView, let window = sv.window, event.window == window else { return event }
+                
+                let mouseLoc = window.mouseLocationOutsideOfEventStream
+                let svRectInWindow = sv.convert(sv.bounds, to: nil)
+                let hitRect = svRectInWindow.insetBy(dx: 0, dy: -4)
+                
+                if hitRect.contains(mouseLoc) {
+                    if event.deltaY != 0 && event.deltaX == 0 && !event.modifierFlags.contains(.shift) {
+                        let delta = event.hasPreciseScrollingDeltas
+                            ? event.scrollingDeltaY
+                            : (event.scrollingDeltaY != 0 ? event.scrollingDeltaY * 2.5 : event.deltaY * 28.0)
+                        
+                        let cur = sv.contentView.bounds.origin
+                        let maxScrollX = max(0, (sv.documentView?.bounds.width ?? 0) - sv.contentView.bounds.width)
+                        let newX = min(max(0, cur.x - delta), maxScrollX)
+                        if newX != cur.x {
+                            sv.contentView.scroll(to: NSPoint(x: newX, y: cur.y))
+                            sv.reflectScrolledClipView(sv.contentView)
+                        }
+                        return nil
+                    }
+                }
+                return event
+            }
         }
         .onDisappear {
             if let monitor = keyMonitor {
                 NSEvent.removeMonitor(monitor)
                 keyMonitor = nil
+            }
+            if let monitor = scrollMonitor {
+                NSEvent.removeMonitor(monitor)
+                scrollMonitor = nil
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ArkenSelectTab"))) { notif in
@@ -338,4 +374,28 @@ struct VisualEffectBackground: NSViewRepresentable {
     }
     
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
+}
+
+// Helper to capture the underlying NSScrollView of SwiftUI ScrollViews
+struct ScrollViewFinder: NSViewRepresentable {
+    let onFound: (NSScrollView) -> Void
+    
+    func makeNSView(context: Context) -> CustomFinderView {
+        let v = CustomFinderView()
+        v.onFound = onFound
+        return v
+    }
+    
+    func updateNSView(_ nsView: CustomFinderView, context: Context) {}
+}
+
+class CustomFinderView: NSView {
+    var onFound: ((NSScrollView) -> Void)?
+    
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if let sv = enclosingScrollView {
+            onFound?(sv)
+        }
+    }
 }

@@ -6,11 +6,11 @@
 
 ### *The Featherlight, All-in-One macOS System Monitor, Power Guard & Productivity Suite*
 
-[![macOS 15+](https://img.shields.io/badge/macOS-15.0%2B%20Sequoia-black?style=for-the-badge&logo=apple)](https://apple.com)
+[![macOS 14+](https://img.shields.io/badge/macOS-14.0%2B%20Sonoma%20%2F%20Sequoia-black?style=for-the-badge&logo=apple)](https://apple.com)
 [![Apple Silicon](https://img.shields.io/badge/Architecture-Apple%20Silicon%20(M1--M4)-orange?style=for-the-badge&logo=apple)](https://apple.com)
 [![Swift](https://img.shields.io/badge/Swift-5.10%2B%20%2F%20SwiftUI-F05138?style=for-the-badge&logo=swift&logoColor=white)](https://swift.org)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-0%20(Pure%20Native)-brightgreen?style=for-the-badge)]()
-[![Baseline RAM](https://img.shields.io/badge/Baseline%20RAM-%3C%2075%20MB%20(~42MB%20idle)-blue?style=for-the-badge)]()
+[![Baseline RAM](https://img.shields.io/badge/Baseline%20RAM-%3C%2065%20MB%20(~42MB%20idle)-blue?style=for-the-badge)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](LICENSE)
 
 <br/>
@@ -71,6 +71,7 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 * **What it does:** Communicates directly with the Apple Silicon SMC (System Management Controller) via a lightweight C helper (`arken-power-helper`) to stop battery charging at your target limit (e.g. 80%) while running your Mac directly on AC power.
 * **⚡ Top-Up to 100% Mode (v0.8.5):** Single-click temporary bypass to fill the battery to 100% before travel or meetings. Automatically re-engages normal 80% protection the moment the battery reaches 100% or the power brick is disconnected.
 * **Clamshell Mode:** Keeps your MacBook awake with the lid closed even without an external monitor or mouse connected.
+* **Clamshell Authorization Guard (v0.8.6):** Gracefully halts repeated password prompts if canceled; provides a 1-click retry pill and status indicator.
 * **Safety Failsafe:** If the charger is unplugged, Clamshell Mode **deactivates immediately** to prevent battery drain and stop your laptop from accidentally overheating inside a backpack.
 * **Desktop Mac Support:** Automatically detects iMac, Mac mini, Mac Studio, and Mac Pro, displaying an **AC Direct Power** indicator instead of missing-battery warnings.
 * 💡 **Real-World Scenario:** You work at a desk connected to a power brick all day. Instead of letting your battery stay at 100% stress voltage, ArkenStone cuts charging at 80% and powers the Mac directly from the wall. Need to travel tomorrow? Click Top-Up to 100% and let ArkenStone safely charge to full once.
@@ -81,6 +82,7 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 * **What it does:** Real-time monitoring of CPU per-core load (Performance vs. Efficiency cores), Apple Silicon GPU renderer load, memory pressure, active network speeds, and 50+ hardware thermal sensors (°C / °F).
 * **🌡️ SMC Fan Telemetry & Fanless Architecture (v0.8.5):** Real-time fan speed RPM telemetry via Mach SMC queries on MacBook Pro, Mac Studio, and Mac mini, with automatic "Fanless Architecture (Silent Passive Cooling)" detection for MacBook Air.
 * **⏱️ Real-Time Delta Process CPU Usage (v0.8.5):** True instantaneous per-process CPU utilization calculated via high-precision Mach time deltas, ensuring active processes are accurately surfaced.
+* **Activity Monitor CPU Standard (v0.8.6):** Mach absolute timebase conversion accurately mirrors macOS Activity Monitor per-core CPU usage on Apple Silicon.
 * **🌐 Dynamic Network Interface Detection (v0.8.5):** Automatically distinguishes between native Wi-Fi (`en0`), wired Ethernet adapters, bridges, and Personal Hotspots with real-time online/offline connectivity badges.
 * **Pure Kernel Calls:** Queries Mach kernel APIs (`host_processor_info`) and IOKit accelerators. Zero spawned shell subprocesses.
 * **Adaptive Polling:** Automatically throttles to a 3-second relaxed interval when the popover is closed to draw negligible energy.
@@ -92,6 +94,7 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 * **What it does:** A transient staging shelf for files, images, links, and snippets.
 * **Detachable Floating Panel (`[↗]`):** Pop out the shelf into an independent, always-on-top floating window that stays visible across full-screen apps and multiple monitors.
 * **Pinned Across All Spaces & Desktops (v0.8.5):** The floating shelf panel now stays pinned and travels with you across all macOS Spaces, Desktops, and Full-Screen applications (`.canJoinAllSpaces`).
+* **Folder & App Size Intelligence (v0.8.6):** Displays smart "Folder" and "App" badges to prevent false "0 KB" inode sizing.
 * **Safety & Undo:** Supports `⌘Z` multi-level undo if you accidentally remove an item, and automatically guards against crashes if a staged file is deleted from Finder.
 * **App Cleaner Bridge:** Dropping a `.app` bundle onto the shelf automatically gives you a one-click shortcut to inspect and remove all its leftover files.
 * 💡 **Real-World Scenario:** You are writing an article or email and collecting 6 different screenshots and PDF documents from different Finder folders. Instead of cluttering your Desktop, drag them all onto the ArkenStone menu bar icon or the floating shelf, then drag them into your email all at once.
@@ -100,6 +103,7 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 
 ### 4. 📋 Private RAM-Only Clipboard History
 * **What it does:** Tracks your copied snippets, text, code, links, and colors in volatile system memory.
+* **Single-Click Copy & Visual Badge (v0.8.6):** Click any snippet to copy immediately with an animated "✓ Copied!" badge.
 * **✨ Quick Text Transformers (v0.8.5):** Format/Prettify JSON, Minify JSON, Base64 Encode/Decode, URL Encode/Decode, and Plain-Text trim directly from clipboard history.
 * **Zero Disk Persistence:** History is stored strictly in RAM and clears automatically on reboot or quit.
 * **Password Vault Filter:** Automatically ignores sensitive pasteboards from 1Password, Bitwarden, KeePassXC, and Apple Keychain.
@@ -141,6 +145,7 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 ### 9. 🔌 Developer TCP Port Manager & Process Killer
 * **What it does:** Scans active TCP listening ports (e.g. 3000, 5173, 8000, 8080) and displays the associated process name and PID.
 * **Conflict Resolution:** Terminate stubborn orphaned processes with a single click (graceful SIGTERM with automatic SIGKILL fallback).
+* **Root Permission & EPERM Protection (v0.8.6):** Validates system permissions before killing ports and alerts via sound if elevated rights are needed.
 * 💡 **Real-World Scenario:** You restart your Node.js or Python dev server and get hit with `Error: listen EADDRINUSE :::3000`. Instead of opening Terminal and typing `lsof -i :3000` and `kill -9`, open ArkenStone Port Manager and kill it with one tap.
 
 ---
@@ -153,8 +158,9 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 ---
 
 ### 11. 🎨 Magnifier Screen Eyedropper & Quick Scratchpad
-* **Pixel Loupe:** Magnifies screen pixels with an overlaid grid to inspect colors and copy `#HEX` or `rgb()` values (`⌥C`).
+* **Pixel Loupe:** Magnifies screen pixels with an overlaid grid to inspect colors and copy `#HEX` or `rgb()` values (`⌥P`).
 * **Quick Scratchpad:** A clean notepad right in your menu bar to draft thoughts or stash temporary API tokens with one-click export to Desktop (`~/Desktop/Arken_Notes.txt`).
+* **Detachable Floating Notes Window (v0.8.6):** Hit `⌥N` to pop out notes into an independent, all-spaces floating window with automatic timestamp insertion.
 * **Native Scratchpad Clipboard Integration (v0.8.5):** Full system keyboard shortcut support (`⌘C`, `⌘V`, `⌘X`, `⌘A`, `⌘Z`, `⇧⌘Z`) and native context menus for seamless copy-pasting.
 
 ---
@@ -168,7 +174,28 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 
 ### 13. ⏏️ Mounted External Drives & DMG Ejector (v0.8.5)
 * **What it does:** Live widget on the Overview dashboard showing all connected USB drives, external SSDs, and disk images (.dmg) with 1-click individual and "Eject All" options.
+* **Safe Ejection Alerts & Menu Bar Access (v0.8.6):** Eject connected drives directly from the menu bar right-click menu, with audio and visual warnings if a disk is busy.
 * 💡 **Real-World Scenario:** You just finished installing an app from a downloaded DMG. Instead of opening Finder or finding the drive icon on your desktop, eject it directly from ArkenStone Overview with one click.
+
+---
+
+### 14. ⚡ Global Keyboard Shortcuts & Context Menu (v0.8.6)
+* **Menu Bar Right-Click Context Menu (v0.8.6):** Right-click or Control-click the status bar icon to toggle utilities, view recent clipboard items with image thumbnails, eject disks, and manage shelf modes.
+* **Hardware Mouse Wheel Tab Navigation (v0.8.6):** Scroll horizontally through dashboard tabs with physical mouse scroll wheels or trackballs without holding Shift.
+
+| Shortcut | Action | Description |
+| :--- | :--- | :--- |
+| `⌥ Space` / `⌥ A` | **Main Popover** | Toggle main control center |
+| `⌥ C` | **Keep Awake** | Toggle Caffeine sleep prevention |
+| `⌥ P` | **Color Pipette** | Magnifier screen eyedropper |
+| `⌥ O` | **Screen OCR** | Apple Vision text & QR capture |
+| `⌥ M` | **Mic Mute** | Global hardware microphone killswitch |
+| `⌥ D` | **Floating Shelf** | Detachable staging file shelf |
+| `⌥ N` | **Floating Notes** | Detachable quick notes window |
+| `⌥ H` | **Desktop Focus** | Hide/show desktop icons |
+| `⌥ V` | **Clipboard Menu** | Quick clipboard history menu |
+| `⌥ K` | **CleanLock** | Keyboard & screen cleaning shield |
+| `⌘1` .. `⌘0` | **Tab Navigation** | Fast tab jumping in control center |
 
 ---
 
@@ -216,11 +243,11 @@ cd arkenstone
 open ArkenStone.app
 ```
 
-*Prerequisites for building: macOS 15.0+ (Sequoia), Apple Silicon Mac (M1–M4), and Xcode Command Line Tools (`xcode-select --install`).*
+*Prerequisites for building: macOS 14.0+ (Sonoma) or 15.0+ (Sequoia), Apple Silicon Mac (M1–M4), and Xcode Command Line Tools (`xcode-select --install`).*
 
 ---
 
-## ⚡ Early Access (v0.8.5) & Rapid Support
+## ⚡ Current Release (v0.8.6) & Rapid Support
 
 ArkenStone is under active, enthusiastic development. We adhere to transparent indie developer practices:
 
