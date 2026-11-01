@@ -101,6 +101,7 @@ public class LaunchAtLoginEngine: ObservableObject {
             <key>ProgramArguments</key>
             <array>
                 <string>\(execPath)</string>
+                <string>--background</string>
             </array>
             <key>RunAtLoad</key>
             <true/>

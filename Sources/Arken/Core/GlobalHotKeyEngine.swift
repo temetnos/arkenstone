@@ -25,7 +25,7 @@ public class GlobalHotKeyEngine {
         )
         
         InstallEventHandler(
-            GetApplicationEventTarget(),
+            GetEventDispatcherTarget(),
             { (_, theEvent, _) -> OSStatus in
                 var hotKeyID = EventHotKeyID()
                 let status = GetEventParameter(
@@ -62,7 +62,7 @@ public class GlobalHotKeyEngine {
         
         let hotKeyID = EventHotKeyID(signature: OSType(0x41524B4E), id: id) // 'ARKN'
         var hotKeyRef: EventHotKeyRef?
-        let err = RegisterEventHotKey(keyCode, modifiers, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
+        let err = RegisterEventHotKey(keyCode, modifiers, hotKeyID, GetEventDispatcherTarget(), 0, &hotKeyRef)
         if err == noErr, let ref = hotKeyRef {
             hotKeyRefs.append(ref)
         }

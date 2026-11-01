@@ -202,11 +202,13 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         closeShelfPopover()
         monitor.isPopoverVisible = true
         monitor.updateAll()
+        
         mainPopover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         
-        // Activate app so popover gains immediate keyboard focus for shortcuts (⌘1..⌘9, ESC)
-        NSApp.activate(ignoringOtherApps: true)
+        // Ensure popover appears over fullscreen spaces and gains immediate focus
+        NSApp.activate()
         if let window = mainPopover.contentViewController?.view.window {
+            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             window.makeKeyAndOrderFront(nil)
         }
     }
@@ -229,7 +231,10 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         closeMainPopover()
         if !shelfPopover.isShown {
             shelfPopover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            shelfPopover.contentViewController?.view.window?.makeKey()
+            if let win = shelfPopover.contentViewController?.view.window {
+                win.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+                win.makeKey()
+            }
             DropShelfEngine.shared.isShelfOpen = true
         }
     }

@@ -18,6 +18,18 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Register Global System Hotkeys (⌥O, ⌥C, ⌥M, ⌥D, ⌥A, ⌥K)
         GlobalHotKeyEngine.shared.registerDefaults()
+        
+        // If launched manually by user (not via background LaunchAgent), show popover immediately
+        if !CommandLine.arguments.contains("--background") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+                self?.statusBarController?.showMainPopover()
+            }
+        }
+    }
+    
+    public func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        statusBarController?.showMainPopover()
+        return true
     }
     
     private func setupStandardEditMenu() {
