@@ -4,25 +4,65 @@ import SwiftUI
 import Carbon
 
 final class CleanLockWindow: NSWindow {
+    weak var engine: KeyboardCleanEngine?
+    
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
     
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        if event.keyCode == 53 { // ESC key
-            return false // Allow Esc to reach event monitor
+        // Instant unlock via ⌘⌥K or ⌃⌥K (kVK_ANSI_K = 40)
+        let isK = (event.keyCode == 40)
+        let hasCmdOpt = event.modifierFlags.contains([.command, .option])
+        let hasCtrlOpt = event.modifierFlags.contains([.control, .option])
+        if isK && (hasCmdOpt || hasCtrlOpt) {
+            engine?.unlock()
+            return true
         }
         return true // Swallow all function keys (F1-F12), media keys, and system shortcuts
     }
     
-    override func keyDown(with event: NSEvent) {
-        if event.keyCode == 53 {
-            super.keyDown(with: event)
+    override func sendEvent(_ event: NSEvent) {
+        guard let engine = engine, engine.isLocked else {
+            super.sendEvent(event)
+            return
         }
-    }
-    
-    override func keyUp(with event: NSEvent) {
-        if event.keyCode == 53 {
-            super.keyUp(with: event)
+        
+        switch event.type {
+        case .keyDown:
+            // 1. Direct Unlock via Shortcut: ⌘⌥K or ⌃⌥K
+            let isK = (event.keyCode == 40)
+            let hasCmdOpt = event.modifierFlags.contains([.command, .option])
+            let hasCtrlOpt = event.modifierFlags.contains([.control, .option])
+            if isK && (hasCmdOpt || hasCtrlOpt) {
+                engine.unlock()
+                return
+            }
+            
+            // 2. ESC Key Hold to Unlock (kVK_Escape = 53)
+            if event.keyCode == 53 {
+                if engine.holdStartTime == nil {
+                    engine.startEscHold()
+                }
+                return
+            }
+            
+            // 3. Swallow all other typing/wiping keys (do not cancel ESC hold if cloth brushes other keys)
+            return
+            
+        case .keyUp:
+            // Only releasing the ESC key itself cancels the hold
+            if event.keyCode == 53 {
+                engine.cancelEscHold()
+            }
+            return
+            
+        case .systemDefined:
+            // Swallow media/brightness/volume keys
+            return
+            
+        default:
+            // Pass mouse down, drag, and up to the on-screen unlock button
+            super.sendEvent(event)
         }
     }
 }
@@ -36,7 +76,7 @@ public class KeyboardCleanEngine: ObservableObject {
     private var window: CleanLockWindow?
     private var eventMonitor: Any?
     private var holdTimer: Timer?
-    private var holdStartTime: Date?
+    public var holdStartTime: Date?
     
     public init() {}
     
@@ -67,6 +107,7 @@ public class KeyboardCleanEngine: ObservableObject {
             backing: .buffered,
             defer: false
         )
+        win.engine = self
         win.setFrame(screen.frame, display: true)
         win.level = .screenSaver
         win.isOpaque = false
@@ -84,17 +125,26 @@ public class KeyboardCleanEngine: ObservableObject {
         NSApp.activate(ignoringOtherApps: true)
         self.window = win
         
-        // Monitor key events to block input and detect Esc hold
-        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged, .systemDefined]) { [weak self] event in
+        // Backup monitor to block system-wide input and detect Esc / shortcut unlock
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .systemDefined]) { [weak self] event in
             guard let self = self, self.isLocked else { return event }
             
             if event.type == .keyDown {
-                if event.keyCode == 53 { // ESC key
+                // 1. Instant shortcut unlock via ⌘⌥K or ⌃⌥K (kVK_ANSI_K = 40)
+                let isK = (event.keyCode == 40)
+                let hasCmdOpt = event.modifierFlags.contains([.command, .option])
+                let hasCtrlOpt = event.modifierFlags.contains([.control, .option])
+                if isK && (hasCmdOpt || hasCtrlOpt) {
+                    self.unlock()
+                    return nil
+                }
+                
+                // 2. ESC key hold
+                if event.keyCode == 53 {
                     if self.holdStartTime == nil {
                         self.startEscHold()
                     }
-                } else {
-                    self.cancelEscHold()
+                    return nil
                 }
                 return nil
             } else if event.type == .keyUp {
@@ -103,7 +153,6 @@ public class KeyboardCleanEngine: ObservableObject {
                 }
                 return nil
             } else if event.type == .systemDefined {
-                // Swallow media keys / volume / brightness keys
                 return nil
             }
             return nil
@@ -130,32 +179,36 @@ public class KeyboardCleanEngine: ObservableObject {
         SoundManager.shared.play(.success)
     }
     
-    private func startEscHold() {
+    public func startEscHold() {
         cancelEscHold()
         holdStartTime = Date()
         
-        let timer = Timer(timeInterval: 0.05, repeats: true) { [weak self] t in
+        let timer = Timer(timeInterval: 0.04, repeats: true) { [weak self] t in
             guard let self = self, self.isLocked, let start = self.holdStartTime else {
                 t.invalidate()
                 return
             }
             let elapsed = Date().timeIntervalSince(start)
-            let progress = min(1.0, elapsed / 2.2) // 2.2s hold
-            self.holdProgress = progress
-            if progress >= 1.0 {
-                t.invalidate()
-                self.unlock()
+            let progress = min(1.0, elapsed / 1.8) // 1.8s hold
+            DispatchQueue.main.async {
+                self.holdProgress = progress
+                if progress >= 1.0 {
+                    t.invalidate()
+                    self.unlock()
+                }
             }
         }
         RunLoop.main.add(timer, forMode: .common)
         self.holdTimer = timer
     }
     
-    private func cancelEscHold() {
+    public func cancelEscHold() {
         holdStartTime = nil
         holdTimer?.invalidate()
         holdTimer = nil
-        holdProgress = 0.0
+        DispatchQueue.main.async {
+            self.holdProgress = 0.0
+        }
     }
     
     public func onButtonHoldProgress(progress: Double) {
@@ -247,8 +300,8 @@ public struct KeyboardCleanOverlayView: View {
                             .foregroundColor(.white)
                     }
                     
-                    Text(L10n.tr("Hold ESC or click & hold the button below to unlock (or press ⌃⌥K)",
-                                 "Kilidi açmak için ESC tuşunu veya butonu basılı tutun (veya ⌃⌥K basın)"))
+                    Text(L10n.tr("Hold ESC or click & hold the button below to unlock (or press ⌘⌥K / ⌃⌥K)",
+                                 "Kilidi açmak için ESC tuşunu veya butonu basılı tutun (veya ⌘⌥K / ⌃⌥K basın)"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.white.opacity(0.6))
                     
@@ -302,7 +355,7 @@ public struct KeyboardCleanOverlayView: View {
                 return
             }
             let elapsed = Date().timeIntervalSince(start)
-            let progress = min(1.0, elapsed / 2.0)
+            let progress = min(1.0, elapsed / 1.8)
             eng.onButtonHoldProgress(progress: progress)
         }
         RunLoop.main.add(timer, forMode: .common)

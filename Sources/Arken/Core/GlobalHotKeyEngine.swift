@@ -145,8 +145,12 @@ public class GlobalHotKeyEngine: ObservableObject {
             StatusBarController.shared?.openClipboardFromMenu()
         }
         
-        // ⌃⌥K -> Keyboard & Screen Cleaning Lock
+        // ⌃⌥K & ⌘⌥K -> Keyboard & Screen Cleaning Lock (supports both modifier sets)
         register(keyCode: UInt32(kVK_ANSI_K), modifiers: ctrlOpt) {
+            KeyboardCleanEngine.shared.toggleLock()
+        }
+        let cmdOpt = UInt32(cmdKey | optionKey)
+        register(keyCode: UInt32(kVK_ANSI_K), modifiers: cmdOpt) {
             KeyboardCleanEngine.shared.toggleLock()
         }
     }
