@@ -113,17 +113,17 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 ---
 
 ### 5. 🔍 Apple Vision On-Device Screen OCR & QR Scanner
-* **What it does:** Interactive crosshair tool (`⌥O` or menu button) that extracts text from any area of your screen.
+* **What it does:** Interactive crosshair tool (`⌃⌥O` or menu button) that extracts text from any area of your screen.
 * **Instant QR & Barcode Decoder (v0.8.5):** Simultaneously detects and parses QR codes and barcodes within the captured screen area, copying the decoded URL/payload instantly.
 * **100% On-Device & Private:** Powered locally by Apple's Vision Neural Engine (`VNRecognizeTextRequest` & `VNDetectBarcodesRequest`). No cloud calls, no internet connection required.
-* 💡 **Real-World Scenario:** You are watching a video tutorial or attending a Zoom meeting where a QR code or error message is shown on screen. Press `⌥O`, draw a box over it, and the decoded link or text is instantly copied to your clipboard.
+* 💡 **Real-World Scenario:** You are watching a video tutorial or attending a Zoom meeting where a QR code or error message is shown on screen. Press `⌃⌥O`, draw a box over it, and the decoded link or text is instantly copied to your clipboard.
 
 ---
 
 ### 6. 🎙️ Privacy & Global Microphone Killswitch
-* **What it does:** Hardware-level CoreAudio master input mute toggle (`⌥M`).
+* **What it does:** Hardware-level CoreAudio master input mute toggle (`⌃⌥M`).
 * **Instant Confirmation:** Changes the menu bar indicator and mutes the system audio input globally across all running apps.
-* 💡 **Real-World Scenario:** You are on an unexpected video call or working in an open office. Hit `⌥M` to immediately guarantee your microphone is dead silent, regardless of whether Discord, Teams, or Zoom has focus.
+* 💡 **Real-World Scenario:** You are on an unexpected video call or working in an open office. Hit `⌃⌥M` to immediately guarantee your microphone is dead silent, regardless of whether Discord, Teams, or Zoom has focus.
 
 ---
 
@@ -158,17 +158,17 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 ---
 
 ### 11. 🎨 Magnifier Screen Eyedropper & Quick Scratchpad
-* **Pixel Loupe:** Magnifies screen pixels with an overlaid grid to inspect colors and copy `#HEX` or `rgb()` values (`⌥P`).
+* **Pixel Loupe:** Magnifies screen pixels with an overlaid grid to inspect colors and copy `#HEX` or `rgb()` values (`⌃⌥P`).
 * **Quick Scratchpad:** A clean notepad right in your menu bar to draft thoughts or stash temporary API tokens with one-click export to Desktop (`~/Desktop/Arken_Notes.txt`).
-* **Detachable Floating Notes Window (v0.8.6):** Hit `⌥N` to pop out notes into an independent, all-spaces floating window with automatic timestamp insertion.
+* **Detachable Floating Notes Window (v0.8.6):** Hit `⌃⌥N` to pop out notes into an independent, all-spaces floating window with 1-click timestamp insertion (`[YYYY-MM-DD HH:mm]`).
 * **Native Scratchpad Clipboard Integration (v0.8.5):** Full system keyboard shortcut support (`⌘C`, `⌘V`, `⌘X`, `⌘A`, `⌘Z`, `⇧⌘Z`) and native context menus for seamless copy-pasting.
 
 ---
 
-### 12. ⌨️ Screen & Keyboard CleanLock `⌥K` (v0.8.5)
+### 12. ⌨️ Screen & Keyboard CleanLock `⌃⌥K` (v0.8.5)
 * **What it does:** Full-screen protective shield that temporarily swallows all keystrokes and trackpad clicks while you wipe your screen, keyboard, and trackpad clean.
 * **Safety Hold-to-Unlock:** Press and hold the ESC key or the on-screen unlock button for 2.5 seconds to dismiss the shield.
-* 💡 **Real-World Scenario:** Dust and fingerprints on your MacBook screen or keyboard? Press `⌥K`, wipe your laptop clean without accidentally sending half-written messages or deleting files, then hold ESC to resume work.
+* 💡 **Real-World Scenario:** Dust and fingerprints on your MacBook screen or keyboard? Press `⌃⌥K`, wipe your laptop clean without accidentally sending half-written messages or deleting files, then hold ESC to resume work.
 
 ---
 
@@ -182,19 +182,21 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 ### 14. ⚡ Global Keyboard Shortcuts & Context Menu (v0.8.6)
 * **Menu Bar Right-Click Context Menu (v0.8.6):** Right-click or Control-click the status bar icon to toggle utilities, view recent clipboard items with image thumbnails, eject disks, and manage shelf modes.
 * **Hardware Mouse Wheel Tab Navigation (v0.8.6):** Scroll horizontally through dashboard tabs with physical mouse scroll wheels or trackballs without holding Shift.
+* **Zero Collision Shortcuts:** Tool shortcuts use `Control + Option` (`⌃⌥`) to guarantee zero interference with international and Turkish keyboard characters like `ç` (`⌥C`), `~` (`⌥N`), or `π` (`⌥P`).
+* **Master Toggle:** Global hotkeys can be toggled on or off at any time under **Settings > Global Shortcuts**.
 
 | Shortcut | Action | Description |
 | :--- | :--- | :--- |
 | `⌥ Space` / `⌥ A` | **Main Popover** | Toggle main control center |
-| `⌥ C` | **Keep Awake** | Toggle Caffeine sleep prevention |
-| `⌥ P` | **Color Pipette** | Magnifier screen eyedropper |
-| `⌥ O` | **Screen OCR** | Apple Vision text & QR capture |
-| `⌥ M` | **Mic Mute** | Global hardware microphone killswitch |
-| `⌥ D` | **Floating Shelf** | Detachable staging file shelf |
-| `⌥ N` | **Floating Notes** | Detachable quick notes window |
-| `⌥ H` | **Desktop Focus** | Hide/show desktop icons |
-| `⌥ V` | **Clipboard Menu** | Quick clipboard history menu |
-| `⌥ K` | **CleanLock** | Keyboard & screen cleaning shield |
+| `⌃⌥ C` | **Keep Awake** | Toggle Caffeine sleep prevention |
+| `⌃⌥ P` | **Color Pipette** | Magnifier screen eyedropper |
+| `⌃⌥ O` | **Screen OCR** | Apple Vision text & QR capture |
+| `⌃⌥ M` | **Mic Mute** | Global hardware microphone killswitch |
+| `⌃⌥ D` | **Floating Shelf** | Detachable staging file shelf |
+| `⌃⌥ N` | **Floating Notes** | Detachable quick notes window |
+| `⌃⌥ H` | **Desktop Focus** | Hide/show desktop icons |
+| `⌃⌥ V` | **Clipboard Menu** | Quick clipboard history menu |
+| `⌃⌥ K` | **CleanLock** | Keyboard & screen cleaning shield |
 | `⌘1` .. `⌘0` | **Tab Navigation** | Fast tab jumping in control center |
 
 ---
@@ -208,7 +210,7 @@ Mac users today suffer from **menu bar bloat** and **subscription fatigue**. To 
 | **Drag & Drop File Staging Shelf** | ~$8 – $10 | **Included (Detachable All-Spaces Shelf)** |
 | **Privacy Clipboard History** | ~$10 – $20 / yr | **Included (RAM-Only + Quick Transformers)** |
 | **Screen OCR Text Extractor** | ~$10 – $15 | **Included (On-Device Vision OCR & QR)** |
-| **Screen & Keyboard CleanLock** | ~$5 – $10 | **Included (CleanLock ⌥K Shield)** |
+| **Screen & Keyboard CleanLock** | ~$5 – $10 | **Included (CleanLock ⌃⌥K Shield)** |
 | **App Leftover & Cache Cleaner** | ~$30 – $40 / yr | **Included (Safe Deep Cleaner)** |
 | **Lid-Closed Sleep Prevention** | ~$5 – $10 | **Included (Failsafe Clamshell Mode)** |
 | **Developer TCP Port Manager** | ~$10 | **Included (Active Port Killer)** |

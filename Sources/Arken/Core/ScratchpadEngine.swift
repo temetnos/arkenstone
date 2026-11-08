@@ -41,6 +41,20 @@ public class ScratchpadEngine: ObservableObject {
         }
     }
     
+    public func insertTimestamp() {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd HH:mm"
+        let stamp = "[\(df.string(from: Date()))] "
+        if content.isEmpty {
+            content = stamp
+        } else if content.hasSuffix("\n") {
+            content += stamp
+        } else {
+            content += "\n" + stamp
+        }
+        SoundManager.shared.play(.pop)
+    }
+    
     public func copyAll() {
         guard !content.isEmpty else { return }
         let pboard = NSPasteboard.general

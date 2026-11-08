@@ -195,7 +195,7 @@ public struct OverviewTab: View {
                             )
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .help(audioMute.isMuted ? L10n.tr("Unmute Microphone (⌥M)", "Mikrofonun Sesini Aç (⌥M)") : L10n.tr("Mute Microphone (⌥M)", "Mikrofonu Sustur (⌥M)"))
+                        .help(audioMute.isMuted ? L10n.tr("Unmute Microphone (⌃⌥M)", "Mikrofonun Sesini Aç (⌃⌥M)") : L10n.tr("Mute Microphone (⌃⌥M)", "Mikrofonu Sustur (⌃⌥M)"))
                     }
                     
                     // Desktop Focus Toggle Button
@@ -428,6 +428,7 @@ public struct OverviewTab: View {
                         let pboard = NSPasteboard.general
                         pboard.clearContents()
                         pboard.setString(monitor.network.ipAddress, forType: .string)
+                        ClipboardEngine.shared.checkPasteboard()
                         SoundManager.shared.play(.pop)
                         withAnimation { copiedIP = true }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {

@@ -4,8 +4,19 @@ import AppKit
 
 /// Native macOS Global HotKey Engine using Carbon HIToolbox
 /// Enables system-wide keyboard shortcuts without requiring Accessibility (TCC) permissions.
-public class GlobalHotKeyEngine {
+public class GlobalHotKeyEngine: ObservableObject {
     public static let shared = GlobalHotKeyEngine()
+    
+    @Published public var isEnabled: Bool = true {
+        didSet {
+            UserDefaults.standard.set(isEnabled, forKey: "ArkenGlobalHotKeysEnabled")
+            if isEnabled {
+                registerDefaults()
+            } else {
+                unregisterAll()
+            }
+        }
+    }
     
     private var handlers: [UInt32: () -> Void] = [:]
     private var hotKeyRefs: [EventHotKeyRef] = []
@@ -13,6 +24,9 @@ public class GlobalHotKeyEngine {
     private var isHandlerInstalled = false
     
     public init() {
+        if let saved = UserDefaults.standard.object(forKey: "ArkenGlobalHotKeysEnabled") as? Bool {
+            self.isEnabled = saved
+        }
         setupCarbonEventHandler()
     }
     
@@ -68,8 +82,20 @@ public class GlobalHotKeyEngine {
         }
     }
     
+    public func unregisterAll() {
+        for ref in hotKeyRefs {
+            UnregisterEventHotKey(ref)
+        }
+        hotKeyRefs.removeAll()
+        handlers.removeAll()
+    }
+    
     public func registerDefaults() {
+        guard isEnabled else { return }
+        unregisterAll()
+        
         let opt = UInt32(optionKey)
+        let ctrlOpt = UInt32(controlKey | optionKey)
         
         // ⌥Space & ⌥A -> Toggle Main Menu Bar Control Center
         register(keyCode: UInt32(kVK_Space), modifiers: opt) {
@@ -79,48 +105,48 @@ public class GlobalHotKeyEngine {
             StatusBarController.shared?.toggleMainPopover()
         }
         
-        // ⌥C -> Caffeine / Keep Awake Toggle
-        register(keyCode: UInt32(kVK_ANSI_C), modifiers: opt) {
+        // ⌃⌥C -> Caffeine / Keep Awake Toggle
+        register(keyCode: UInt32(kVK_ANSI_C), modifiers: ctrlOpt) {
             KeepAwakeEngine.shared.toggle()
         }
         
-        // ⌥P -> Screen Eyedropper / Color Picker (Pipette)
-        register(keyCode: UInt32(kVK_ANSI_P), modifiers: opt) {
+        // ⌃⌥P -> Screen Eyedropper / Color Picker (Pipette)
+        register(keyCode: UInt32(kVK_ANSI_P), modifiers: ctrlOpt) {
             StatusBarController.shared?.triggerColorPickerFromMenu()
         }
         
-        // ⌥O -> Screen OCR Text Grabber
-        register(keyCode: UInt32(kVK_ANSI_O), modifiers: opt) {
+        // ⌃⌥O -> Screen OCR Text Grabber
+        register(keyCode: UInt32(kVK_ANSI_O), modifiers: ctrlOpt) {
             StatusBarController.shared?.triggerOCRFromMenu()
         }
         
-        // ⌥M -> Global Microphone Killswitch
-        register(keyCode: UInt32(kVK_ANSI_M), modifiers: opt) {
+        // ⌃⌥M -> Global Microphone Killswitch
+        register(keyCode: UInt32(kVK_ANSI_M), modifiers: ctrlOpt) {
             AudioMuteEngine.shared.toggleMute()
         }
         
-        // ⌥D -> Detachable Drop Shelf Toggle
-        register(keyCode: UInt32(kVK_ANSI_D), modifiers: opt) {
+        // ⌃⌥D -> Detachable Drop Shelf Toggle
+        register(keyCode: UInt32(kVK_ANSI_D), modifiers: ctrlOpt) {
             StatusBarController.shared?.toggleDetachedShelf()
         }
         
-        // ⌥N -> Detachable Quick Notes Window
-        register(keyCode: UInt32(kVK_ANSI_N), modifiers: opt) {
+        // ⌃⌥N -> Detachable Quick Notes Window
+        register(keyCode: UInt32(kVK_ANSI_N), modifiers: ctrlOpt) {
             StatusBarController.shared?.toggleDetachedNotes()
         }
         
-        // ⌥H -> Toggle Desktop Icons (Focus Mode)
-        register(keyCode: UInt32(kVK_ANSI_H), modifiers: opt) {
+        // ⌃⌥H -> Toggle Desktop Icons (Focus Mode)
+        register(keyCode: UInt32(kVK_ANSI_H), modifiers: ctrlOpt) {
             DesktopFocusEngine.shared.toggleDesktopIcons()
         }
         
-        // ⌥V -> Quick Clipboard History Menu
-        register(keyCode: UInt32(kVK_ANSI_V), modifiers: opt) {
+        // ⌃⌥V -> Quick Clipboard History Menu
+        register(keyCode: UInt32(kVK_ANSI_V), modifiers: ctrlOpt) {
             StatusBarController.shared?.openClipboardFromMenu()
         }
         
-        // ⌥K -> Keyboard & Screen Cleaning Lock
-        register(keyCode: UInt32(kVK_ANSI_K), modifiers: opt) {
+        // ⌃⌥K -> Keyboard & Screen Cleaning Lock
+        register(keyCode: UInt32(kVK_ANSI_K), modifiers: ctrlOpt) {
             KeyboardCleanEngine.shared.toggleLock()
         }
     }

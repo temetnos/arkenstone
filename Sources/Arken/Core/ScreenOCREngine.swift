@@ -94,13 +94,8 @@ public class ScreenOCREngine: ObservableObject {
                             self.statusMessage = L10n.tr("\(text.count) characters copied!", "\(text.count) karakter kopyalandı!")
                         }
                         
-                        // Copy to Pasteboard
-                        let pboard = NSPasteboard.general
-                        pboard.clearContents()
-                        pboard.setString(text, forType: .string)
-                        
-                        // Also notify ClipboardEngine
-                        ClipboardEngine.shared.checkPasteboard()
+                        // Copy to Pasteboard & record to internal clipboard history
+                        ClipboardEngine.shared.addInternalCopy(text)
                         
                         SoundManager.shared.play(.success)
                         completion?(text)

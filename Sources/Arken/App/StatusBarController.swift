@@ -397,13 +397,13 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         let shelfCount = DropShelfEngine.shared.items.count
         let shelfTitle = shelfCount > 0 ? L10n.tr("🏝️ Open File Shelf (\(shelfCount) Files)", "🏝️ Dosya Rafını Aç (\(shelfCount) Dosya)") : L10n.tr("🏝️ Open File Shelf", "🏝️ Dosya Rafını Aç")
         let shelfItem = NSMenuItem(title: shelfTitle, action: #selector(toggleShelfFromMenu), keyEquivalent: "d")
-        shelfItem.keyEquivalentModifierMask = [.option]
+        shelfItem.keyEquivalentModifierMask = [.control, .option]
         shelfItem.target = self
         menu.addItem(shelfItem)
         
         let notesTitle = isNotesDetached ? L10n.tr("📝 Close Floating Notes", "📝 Yüzen Notları Kapat") : L10n.tr("📝 Open Floating Notes Window", "📝 Yüzen Notlar Penceresini Aç")
         let notesItem = NSMenuItem(title: notesTitle, action: #selector(toggleNotesFromMenu), keyEquivalent: "n")
-        notesItem.keyEquivalentModifierMask = [.option]
+        notesItem.keyEquivalentModifierMask = [.control, .option]
         notesItem.target = self
         menu.addItem(notesItem)
         
@@ -417,7 +417,7 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         let clipCount = clipItems.count
         let clipTitle = clipCount > 0 ? L10n.tr("📋 Clipboard History (\(clipCount) Items)", "📋 Pano Geçmişi (\(clipCount) Öğe)") : L10n.tr("📋 Clipboard History", "📋 Pano Geçmişi")
         let clipMenuItem = NSMenuItem(title: clipTitle, action: #selector(openClipboardFromMenu), keyEquivalent: "v")
-        clipMenuItem.keyEquivalentModifierMask = [.option]
+        clipMenuItem.keyEquivalentModifierMask = [.control, .option]
         clipMenuItem.target = self
         
         let clipSubmenu = NSMenu()
@@ -471,30 +471,30 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         menu.addItem(clipMenuItem)
         
         let ocrItem = NSMenuItem(title: L10n.tr("🔍 Screen Text Capture (OCR)", "🔍 Ekrandan Metin Kopyala (OCR)"), action: #selector(triggerOCRFromMenu), keyEquivalent: "o")
-        ocrItem.keyEquivalentModifierMask = [.option]
+        ocrItem.keyEquivalentModifierMask = [.control, .option]
         ocrItem.target = self
         menu.addItem(ocrItem)
         
         let colorItem = NSMenuItem(title: L10n.tr("🎨 Color Eyedropper (Pipette)", "🎨 Ekrandan Renk Seç (Damlalık)"), action: #selector(triggerColorPickerFromMenu), keyEquivalent: "p")
-        colorItem.keyEquivalentModifierMask = [.option]
+        colorItem.keyEquivalentModifierMask = [.control, .option]
         colorItem.target = self
         menu.addItem(colorItem)
         
         let cleanItem = NSMenuItem(title: L10n.tr("✨ Keyboard & Screen Clean Lock", "✨ Klavye ve Ekran Temizlik Kilidi"), action: #selector(toggleCleanLock), keyEquivalent: "k")
-        cleanItem.keyEquivalentModifierMask = [.option]
+        cleanItem.keyEquivalentModifierMask = [.control, .option]
         cleanItem.target = self
         menu.addItem(cleanItem)
         
         let isMuted = AudioMuteEngine.shared.isMuted
         let micTitle = isMuted ? L10n.tr("🎙️ Unmute Microphone", "🎙️ Mikrofonun Sesini Aç") : L10n.tr("🔇 Mute Microphone (Global Mute)", "🔇 Mikrofonu Sustur (Global Mute)")
         let micItem = NSMenuItem(title: micTitle, action: #selector(toggleMicFromMenu), keyEquivalent: "m")
-        micItem.keyEquivalentModifierMask = [.option]
+        micItem.keyEquivalentModifierMask = [.control, .option]
         micItem.target = self
         menu.addItem(micItem)
         
         let awakeStatus = KeepAwakeEngine.shared.isActive ? L10n.tr("Active (Disable)", "Açık (Kapat)") : L10n.tr("Inactive (Enable)", "Kapalı (Aç)")
         let awakeItem = NSMenuItem(title: L10n.tr("☕ Keep Awake: \(awakeStatus)", "☕ Caffeine (Uyanık Tut): \(awakeStatus)"), action: #selector(toggleKeepAwake), keyEquivalent: "c")
-        awakeItem.keyEquivalentModifierMask = [.option]
+        awakeItem.keyEquivalentModifierMask = [.control, .option]
         awakeItem.target = self
         menu.addItem(awakeItem)
         
@@ -516,7 +516,7 @@ public class StatusBarController: NSObject, NSPopoverDelegate {
         let isDesktopHidden = DesktopFocusEngine.shared.isDesktopHidden
         let desktopTitle = isDesktopHidden ? L10n.tr("🖥️ Show Desktop Icons", "🖥️ Masaüstü Simgelerini Göster") : L10n.tr("🖥️ Hide Desktop Icons (Focus)", "🖥️ Masaüstü Simgelerini Gizle (Odak)")
         let desktopItem = NSMenuItem(title: desktopTitle, action: #selector(toggleDesktopIconsFromMenu), keyEquivalent: "h")
-        desktopItem.keyEquivalentModifierMask = [.option]
+        desktopItem.keyEquivalentModifierMask = [.control, .option]
         desktopItem.target = self
         menu.addItem(desktopItem)
         

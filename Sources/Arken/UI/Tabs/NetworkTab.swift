@@ -100,6 +100,7 @@ public struct NetworkTab: View {
                                 let pboard = NSPasteboard.general
                                 pboard.clearContents()
                                 pboard.setString(monitor.network.ipAddress, forType: .string)
+                                ClipboardEngine.shared.checkPasteboard()
                                 SoundManager.shared.play(.pop)
                                 withAnimation { copiedIP = true }
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {

@@ -247,8 +247,8 @@ public struct KeyboardCleanOverlayView: View {
                             .foregroundColor(.white)
                     }
                     
-                    Text(L10n.tr("Hold ESC or click & hold the button below to unlock (or press ⌥K)",
-                                 "Kilidi açmak için ESC tuşunu veya butonu basılı tutun (veya ⌥K basın)"))
+                    Text(L10n.tr("Hold ESC or click & hold the button below to unlock (or press ⌃⌥K)",
+                                 "Kilidi açmak için ESC tuşunu veya butonu basılı tutun (veya ⌃⌥K basın)"))
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(.white.opacity(0.6))
                     

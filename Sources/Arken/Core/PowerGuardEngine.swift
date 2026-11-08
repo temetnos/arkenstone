@@ -234,6 +234,26 @@ public class PowerGuardEngine: ObservableObject {
         }
     }
     
+    /// Synchronously restores standard SMC charging upon application quit/termination to prevent hardware charge lock
+    public func restoreChargingOnTermination() {
+        guard isBypassActive && isHelperInstalled else { return }
+        
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: helperPath)
+        process.arguments = ["start"]
+        try? process.run()
+        process.waitUntilExit()
+        
+        if process.terminationStatus != 0 {
+            let sudoProc = Process()
+            sudoProc.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
+            sudoProc.arguments = ["-n", helperPath, "start"]
+            try? sudoProc.run()
+            sudoProc.waitUntilExit()
+        }
+        self.isBypassActive = false
+    }
+    
     private func runWithSudo(args: [String]) {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")

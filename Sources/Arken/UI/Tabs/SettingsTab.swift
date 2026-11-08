@@ -93,6 +93,7 @@ public struct SettingsTab: View {
     @ObservedObject var launchAtLogin = LaunchAtLoginEngine.shared
     @ObservedObject var l10n = LocalizationManager.shared
     @ObservedObject var sound = SoundManager.shared
+    @ObservedObject var hotkeys = GlobalHotKeyEngine.shared
     
     public init() {}
     
@@ -446,31 +447,43 @@ public struct SettingsTab: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         Image(systemName: "keyboard.fill")
-                            .foregroundColor(ArkenTheme.cpuColor)
+                            .foregroundColor(hotkeys.isEnabled ? ArkenTheme.cpuColor : .secondary)
                             .font(.system(size: 14))
                         
-                        Text(L10n.tr("Global Shortcuts (Carbon Hotkeys)", "Global Kısayollar (Carbon Hotkeys)"))
-                            .font(.system(size: 11, weight: .bold))
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(L10n.tr("Global Shortcuts (Carbon Hotkeys)", "Global Kısayollar (Carbon Hotkeys)"))
+                                .font(.system(size: 11, weight: .bold))
+                            Text(L10n.tr("⌃⌥ prevents keyboard layout conflicts", "⌃⌥ tuşları klavye harf çakışmalarını önler"))
+                                .font(.system(size: 8))
+                                .foregroundColor(.secondary)
+                        }
                         
                         Spacer()
                         
-                        Text("Zero TCC / Accessibility Required")
-                            .font(.system(size: 7.5, weight: .medium))
-                            .foregroundColor(.secondary)
+                        Toggle("", isOn: $hotkeys.isEnabled)
+                            .toggleStyle(SwitchToggleStyle(tint: ArkenTheme.cpuColor))
+                            .labelsHidden()
                     }
                     
-                    VStack(spacing: 4) {
-                        shortcutRow(key: "⌥ Space / ⌥ A", title: L10n.tr("Control Center / Menu Bar Window", "Ana Kontrol Merkezi Penceresi"))
-                        shortcutRow(key: "⌥ C", title: L10n.tr("Keep Awake (Caffeine Toggle)", "Uyanık Tut (Caffeine)"))
-                        shortcutRow(key: "⌥ P", title: L10n.tr("Color Eyedropper / Pipette", "Ekrandan Renk Seçici (Damlalık)"))
-                        shortcutRow(key: "⌥ O", title: L10n.tr("Screen OCR & QR Code Scanner", "Ekran OCR & QR Kod Okuyucu"))
-                        shortcutRow(key: "⌥ M", title: L10n.tr("Global Microphone Mute Toggle", "Global Mikrofon Susturma"))
-                        shortcutRow(key: "⌥ D", title: L10n.tr("Detached Floating Drop Shelf", "Ayrılabilir Yüzen Dosya Rafı"))
-                        shortcutRow(key: "⌥ N", title: L10n.tr("Detached Floating Quick Notes", "Ayrılabilir Yüzen Hızlı Notlar"))
-                        shortcutRow(key: "⌥ H", title: L10n.tr("Toggle Desktop Icons (Focus Mode)", "Masaüstü Simgelerini Gizle (Odak)"))
-                        shortcutRow(key: "⌥ V", title: L10n.tr("Quick Clipboard History Menu", "Hızlı Pano Geçmişi Menüsü"))
-                        shortcutRow(key: "⌥ K", title: L10n.tr("Screen & Keyboard Cleaning Lock", "Ekran & Klavye Temizlik Kilidi"))
-                        shortcutRow(key: "⌘1..9, 0", title: L10n.tr("Quick Switch Popover Tabs", "Pencere İçi Sekme Geçişleri"))
+                    if hotkeys.isEnabled {
+                        VStack(spacing: 4) {
+                            shortcutRow(key: "⌥ Space / ⌥ A", title: L10n.tr("Control Center / Menu Bar Window", "Ana Kontrol Merkezi Penceresi"))
+                            shortcutRow(key: "⌃⌥ C", title: L10n.tr("Keep Awake (Caffeine Toggle)", "Uyanık Tut (Caffeine)"))
+                            shortcutRow(key: "⌃⌥ P", title: L10n.tr("Color Eyedropper / Pipette", "Ekrandan Renk Seçici (Damlalık)"))
+                            shortcutRow(key: "⌃⌥ O", title: L10n.tr("Screen OCR & QR Code Scanner", "Ekran OCR & QR Kod Okuyucu"))
+                            shortcutRow(key: "⌃⌥ M", title: L10n.tr("Global Microphone Mute Toggle", "Global Mikrofon Susturma"))
+                            shortcutRow(key: "⌃⌥ D", title: L10n.tr("Detached Floating Drop Shelf", "Ayrılabilir Yüzen Dosya Rafı"))
+                            shortcutRow(key: "⌃⌥ N", title: L10n.tr("Detached Floating Quick Notes", "Ayrılabilir Yüzen Hızlı Notlar"))
+                            shortcutRow(key: "⌃⌥ H", title: L10n.tr("Toggle Desktop Icons (Focus Mode)", "Masaüstü Simgelerini Gizle (Odak)"))
+                            shortcutRow(key: "⌃⌥ V", title: L10n.tr("Quick Clipboard History Menu", "Hızlı Pano Geçmişi Menüsü"))
+                            shortcutRow(key: "⌃⌥ K", title: L10n.tr("Screen & Keyboard Cleaning Lock", "Ekran & Klavye Temizlik Kilidi"))
+                            shortcutRow(key: "⌘1..9, 0", title: L10n.tr("Quick Switch Popover Tabs", "Pencere İçi Sekme Geçişleri"))
+                        }
+                    } else {
+                        Text(L10n.tr("All global keyboard shortcuts are disabled.", "Tüm global klavye kısayolları devre dışı bırakıldı."))
+                            .font(.system(size: 8.5))
+                            .foregroundColor(.secondary)
+                            .padding(.top, 2)
                     }
                 }
             }

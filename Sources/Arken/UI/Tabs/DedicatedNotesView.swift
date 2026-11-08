@@ -35,6 +35,23 @@ public struct DedicatedNotesView: View {
                 
                 Spacer()
                 
+                // Timestamp Button
+                Button(action: {
+                    scratchpad.insertTimestamp()
+                }) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "clock.badge.plus")
+                    }
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundColor(ArkenTheme.accentColor)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(ArkenTheme.accentColor.opacity(0.15))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(PlainButtonStyle())
+                .help(L10n.tr("Insert timestamp [YYYY-MM-DD HH:mm]", "Tarih ve saat damgası ekle [YYYY-MM-DD HH:mm]"))
+                
                 // Export Button
                 if !scratchpad.content.isEmpty {
                     Button(action: {

@@ -52,6 +52,24 @@ public struct ScratchpadTab: View {
                     .buttonStyle(PlainButtonStyle())
                     .help(L10n.tr("Open Detached Floating Notes Window (Pinned on All Desktops)", "Ayrılabilir Yüzen Notlar Penceresini Aç (Tüm Masaüstlerinde Sabit)"))
                     
+                    // Timestamp Button
+                    Button(action: {
+                        scratchpad.insertTimestamp()
+                    }) {
+                        HStack(spacing: 3) {
+                            Image(systemName: "clock.badge.plus")
+                            Text(L10n.tr("Time", "Saat"))
+                        }
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(ArkenTheme.accentColor)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(ArkenTheme.accentColor.opacity(0.15))
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .help(L10n.tr("Insert current timestamp [YYYY-MM-DD HH:mm]", "Geçerli tarih/saat damgası ekle [YYYY-MM-DD HH:mm]"))
+                    
                     // Export Button
                     if !scratchpad.content.isEmpty {
                         Button(action: {

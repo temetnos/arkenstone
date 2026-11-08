@@ -16,7 +16,7 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
         self.hardwareMonitor = monitor
         self.statusBarController = StatusBarController(monitor: monitor)
         
-        // Register Global System Hotkeys (⌥O, ⌥C, ⌥M, ⌥D, ⌥A, ⌥K)
+        // Register Global System Hotkeys (⌥Space/⌥A, ⌃⌥C, ⌃⌥O, ⌃⌥P, ⌃⌥M, ⌃⌥D, ⌃⌥N, ⌃⌥H, ⌃⌥V, ⌃⌥K)
         GlobalHotKeyEngine.shared.registerDefaults()
         
         // If launched manually by user (not via background LaunchAgent), show popover immediately
@@ -54,5 +54,6 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
     
     public func applicationWillTerminate(_ notification: Notification) {
         KeepAwakeEngine.shared.deactivate()
+        PowerGuardEngine.shared.restoreChargingOnTermination()
     }
 }

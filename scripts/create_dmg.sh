@@ -62,16 +62,19 @@ Thank you for downloading ArkenStone!
 
 3. Global Keyboard Shortcuts:
    • ⌥ Space / ⌥ A : Toggle Main Popover Control Center
-   • ⌥ C           : Keep Awake (Caffeine) Toggle
-   • ⌥ P           : Screen Color Eyedropper (Pipette)
-   • ⌥ O           : Screen Text & QR OCR Capture
-   • ⌥ M           : Global Microphone Mute Toggle
-   • ⌥ D           : Floating File Shelf Window
-   • ⌥ N           : Floating Quick Notes Window
-   • ⌥ H           : Toggle Desktop Icons (Focus Mode)
-   • ⌥ V           : Quick Clipboard History Menu
-   • ⌥ K           : Clean Lock (Keyboard & Screen)
+   • ⌃⌥ C          : Keep Awake (Caffeine) Toggle
+   • ⌃⌥ P          : Screen Color Eyedropper (Pipette)
+   • ⌃⌥ O          : Screen Text & QR OCR Capture
+   • ⌃⌥ M          : Global Microphone Mute Toggle
+   • ⌃⌥ D          : Floating File Shelf Window
+   • ⌃⌥ N          : Floating Quick Notes Window
+   • ⌃⌥ H          : Toggle Desktop Icons (Focus Mode)
+   • ⌃⌥ V          : Quick Clipboard History Menu
+   • ⌃⌥ K          : Clean Lock (Keyboard & Screen)
    • ⌘1..0         : Switch Dashboard Tabs Quickly
+
+   (Note: Secondary tool hotkeys use ⌃⌥ to avoid keyboard collisions with
+    international & Turkish characters. Hotkeys can be toggled on/off in Settings.)
 
 Enjoy your pure, native, and ultra-lightweight macOS power tool!
 ============================================================

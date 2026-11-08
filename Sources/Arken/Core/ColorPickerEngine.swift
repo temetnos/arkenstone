@@ -52,13 +52,8 @@ public class ColorPickerEngine: ObservableObject {
                 self.lastSampledColor = srgb
                 self.statusMessage = L10n.tr("Color copied: \(hexString)", "Renk panoya kopyalandı: \(hexString)")
                 
-                // Copy HEX to System Pasteboard
-                let pboard = NSPasteboard.general
-                pboard.clearContents()
-                pboard.setString(hexString, forType: .string)
-                
-                // Automatically record to ClipboardEngine history
-                ClipboardEngine.shared.checkPasteboard()
+                // Copy HEX to System Pasteboard & record to internal clipboard history
+                ClipboardEngine.shared.addInternalCopy(hexString)
                 
                 SoundManager.shared.play(.success)
                 completion?(hexString)
