@@ -152,9 +152,8 @@ public class NetworkMonitor {
         }
         
         // Inspect SystemConfiguration for native interface type and localized display name
-        let interfaces = SCNetworkInterfaceCopyAll() as [AnyObject]
-        for iface in interfaces {
-            let scIface = iface as! SCNetworkInterface
+        if let interfaces = SCNetworkInterfaceCopyAll() as? [SCNetworkInterface] {
+            for scIface in interfaces {
                 if let bsd = SCNetworkInterfaceGetBSDName(scIface) as String?, bsd == bsdName {
                     let type = (SCNetworkInterfaceGetInterfaceType(scIface) as String?) ?? ""
                     if type == (kSCNetworkInterfaceTypeIEEE80211 as String) {
@@ -166,6 +165,7 @@ public class NetworkMonitor {
                     }
                 }
             }
+        }
         
         if bsdName == "en0" {
             let isDesktop = HardwareMonitor.shared?.battery.hasBattery == false

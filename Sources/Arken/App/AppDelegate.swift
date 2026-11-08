@@ -55,5 +55,6 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
     public func applicationWillTerminate(_ notification: Notification) {
         KeepAwakeEngine.shared.deactivate()
         PowerGuardEngine.shared.restoreChargingOnTermination()
+        KeyboardCleanEngine.shared.unlock()
     }
 }

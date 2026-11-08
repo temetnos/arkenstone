@@ -129,14 +129,17 @@ public class LaunchAtLoginEngine: ObservableObject {
         
         let currentExecPath = Bundle.main.executableURL?.path ?? Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/ArkenStone").path
         if let data = try? Data(contentsOf: plistURL),
-           let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any],
-           let args = plist["ProgramArguments"] as? [String] {
-            let existingPath = args.first ?? ""
-            let hasBackground = args.contains("--background")
+           let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any] {
+            let args = plist["ProgramArguments"] as? [String]
+            let existingPath = args?.first ?? ""
+            let hasBackground = args?.contains("--background") == true
             if existingPath != currentExecPath || !hasBackground {
-                // Path changed or missing --background flag - re-generate plist
+                // Path changed, malformed, or missing --background flag - re-generate plist
                 writeLaunchAgentPlist()
             }
+        } else {
+            // Unparseable or corrupt plist file - recreate
+            writeLaunchAgentPlist()
         }
     }
 }

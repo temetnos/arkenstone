@@ -178,7 +178,7 @@ public class ClipboardEngine: ObservableObject {
     
     public func startPolling() {
         pollTimer?.invalidate()
-        let timer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: true) { [weak self] _ in
+        let timer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { [weak self] _ in
             self?.checkPasteboard()
         }
         RunLoop.main.add(timer, forMode: .common)
@@ -186,6 +186,11 @@ public class ClipboardEngine: ObservableObject {
     }
     
     public func checkPasteboard() {
+        if !Thread.isMainThread {
+            DispatchQueue.main.async { self.checkPasteboard() }
+            return
+        }
+        
         let pboard = NSPasteboard.general
         guard pboard.changeCount != lastChangeCount else { return }
         lastChangeCount = pboard.changeCount
@@ -243,8 +248,9 @@ public class ClipboardEngine: ObservableObject {
             processedText = text
         }
         
-        // Avoid adding if same as the very latest item
-        if let first = items.first, first.type != .image, first.content == processedText {
+        // Avoid adding if same as the very latest unpinned item
+        let latestUnpinned = items.first(where: { !$0.isPinned })
+        if let latest = latestUnpinned, latest.type != .image, latest.content == processedText {
             return
         }
         
@@ -276,9 +282,12 @@ public class ClipboardEngine: ObservableObject {
         } else if let fileURLs = pboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
                   let first = fileURLs.first,
                   ["png", "jpg", "jpeg", "gif", "webp", "heic", "tiff", "bmp"].contains(first.pathExtension.lowercased()) {
-            if let fileData = try? Data(contentsOf: first) {
-                rawData = fileData
-                sourceName = first.lastPathComponent
+            let fileSize = (try? first.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            if fileSize > 0 && fileSize <= 25 * 1024 * 1024 { // max 25 MB guard for clipboard images
+                if let fileData = try? Data(contentsOf: first) {
+                    rawData = fileData
+                    sourceName = first.lastPathComponent
+                }
             }
         }
         
@@ -322,8 +331,9 @@ public class ClipboardEngine: ObservableObject {
     }
     
     private func handleNewImage(data: Data, size: CGSize, name: String?) {
-        // Check if latest item is already this identical image
-        if let first = items.first, first.type == .image, first.imageData?.count == data.count && first.imageDimensions == size {
+        // Check if latest unpinned item is already this identical image
+        let latestUnpinned = items.first(where: { !$0.isPinned })
+        if let latest = latestUnpinned, latest.type == .image, latest.imageData?.count == data.count && latest.imageDimensions == size {
             return
         }
         
@@ -363,6 +373,11 @@ public class ClipboardEngine: ObservableObject {
     }
     
     public func addInternalCopy(_ text: String) {
+        if !Thread.isMainThread {
+            DispatchQueue.main.async { self.addInternalCopy(text) }
+            return
+        }
+        
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         

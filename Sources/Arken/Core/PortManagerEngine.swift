@@ -149,8 +149,7 @@ public class PortManagerEngine: ObservableObject {
         
         let lines = output.components(separatedBy: .newlines)
         for line in lines {
-            guard !line.isEmpty else { continue }
-            let prefix = line.first!
+            guard let prefix = line.first else { continue }
             let val = String(line.dropFirst())
             
             switch prefix {
